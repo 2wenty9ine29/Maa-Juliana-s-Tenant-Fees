@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.5.29';
+const APP_VERSION='2.3.5.30';
 const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
 let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
@@ -113,6 +113,21 @@ function approximateCoverage(p){
   if(months===0) return 'Less than a month';
   return `About ${months + (days>=15 ? 1 : 0)} month${(months + (days>=15 ? 1 : 0))===1?'':'s'}`;
 }
+function timeLeftText(p){
+  const end=p.end;if(!end)return '';
+  const now=iso(today),start=p.start||p.date||now;
+  const dayMs=86400000;
+  if(end<=now)return 'Completed';
+  if(start>now){const d=Math.ceil((new Date(start+'T00:00:00')-new Date(now+'T00:00:00'))/dayMs);return d>=45?`Starts in about ${Math.round(d/30.44)} months`:`Starts in ${d} day${d===1?'':'s'}`}
+  const d=Math.ceil((new Date(end+'T00:00:00')-new Date(now+'T00:00:00'))/dayMs);
+  if(d>=45){const m=Math.round(d/30.44);return `About ${m} month${m===1?'':'s'} left`}
+  return `${d} day${d===1?'':'s'} left`;
+}
+function paymentCoverageLine(p){
+  const paid=approximateCoverage(p).replace(/^About /,'').replace(/^Less than a month$/,'<1 month');
+  const left=timeLeftText(p);
+  return `${paid} paid${left?` · ${left}`:''}`;
+}
 function paymentMonthHeader(date){
   const d=new Date(`${date}T00:00:00`);
   return d.toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase();
@@ -129,7 +144,7 @@ function renderPayments(){
     if(!g){g={key,title:paymentMonthHeader(p.date||iso(today)),items:[]};groups.push(g)}
     g.items.push(p);
   });
-  $('paymentsList').innerHTML=groups.map(g=>`<section class="payment-group"><h3 class="payment-month-header">${esc(g.title)}</h3><div class="payment-group-list">${g.items.map(p=>{const t=tenant(p.tenantId);if(!t)return '';const [statusLabel,statusClass]=status(t);const badge=statusClass==='active'?'':`<span class="status ${statusClass}">${statusLabel}</span>`;const ecg=Number(p.ecgDeduction)||0;const rent=Number(p.netAmount??p.amount)||0;const extra=ecg>0?` · ECG ${money(ecg,p.currency)} deducted`:'';return `<button class="payment-row ${statusClass}" data-person="${esc(t.id)}"><div class="payment-main"><div class="payment-row-top"><strong>${esc(t.name)}</strong><strong class="payment-amount">${money(rent,p.currency)}</strong></div><div class="payment-row-bottom"><span>${approximateCoverage(p)}${extra}</span>${badge}</div></div><i class="payment-chevron">›</i></button>`}).join('')}</div></section>`).join('')||`<div class="empty">No payments yet.</div>`;
+  $('paymentsList').innerHTML=groups.map(g=>`<section class="payment-group"><h3 class="payment-month-header">${esc(g.title)}</h3><div class="payment-group-list">${g.items.map(p=>{const t=tenant(p.tenantId);if(!t)return '';const [statusLabel,statusClass]=status(t);const badge=statusClass==='active'?'':`<span class="status ${statusClass}">${statusLabel}</span>`;const ecg=Number(p.ecgDeduction)||0;const rent=Number(p.netAmount??p.amount)||0;const extra=ecg>0?` · ECG ${money(ecg,p.currency)} deducted`:'';return `<button class="payment-row ${statusClass}" data-person="${esc(t.id)}"><div class="payment-main"><div class="payment-row-top"><strong>${esc(t.name)}</strong><strong class="payment-amount">${money(rent,p.currency)}</strong></div><div class="payment-row-bottom"><span>${paymentCoverageLine(p)}${extra}</span>${badge}</div></div><i class="payment-chevron">›</i></button>`}).join('')}</div></section>`).join('')||`<div class="empty">No payments yet.</div>`;
   document.querySelectorAll('#paymentsList [data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
 }
 function latestPayment(id){return [...data.payments].filter(p=>p.tenantId===id).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||null}
@@ -144,7 +159,7 @@ function renderReminders(){
 }
 $('peopleSearch').oninput=renderPeople;
 
-function openDetail(id){const t=tenant(id);if(!t)return;selectedTenant=id;const p=latestPayment(id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';$('detailRentAmount').textContent=p?money(rent,t.currency):'—';$('detailEcgAmount').textContent=ecg>0?money(ecg,t.currency):'None';$('detailCoverage').textContent=p?approximateCoverage(p):'No payment yet';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
+function openDetail(id){const t=tenant(id);if(!t)return;selectedTenant=id;const p=latestPayment(id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';$('detailRentAmount').textContent=p?money(rent,t.currency):'—';$('detailEcgAmount').textContent=ecg>0?money(ecg,t.currency):'None';$('detailCoverage').textContent=p?paymentCoverageLine(p):'No payment yet';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
 $('extendBtn').onclick=()=>{closeSheets();openPaymentSheet(selectedTenant)};
 $('ecgBillBtn').onclick=()=>{closeSheets();openEcgSheet(selectedTenant)};
 $('detailReceiptBtn').onclick=()=>openReceiptForTenant(selectedTenant,true);
