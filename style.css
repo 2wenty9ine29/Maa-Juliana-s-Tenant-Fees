@@ -80,3 +80,4 @@ h1{font-size:53px!important;line-height:.98!important}
 @media(prefers-reduced-motion:reduce){.person-swipe .person-row{transition:none}}
 
 .sheet [hidden]{display:none!important}
+.currency-total[hidden]{display:none!important}

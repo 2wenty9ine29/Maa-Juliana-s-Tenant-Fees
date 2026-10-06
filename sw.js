@@ -1,4 +1,4 @@
-const CACHE='mad-juliana-v2-3-5-32';
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html','./style.css?v=532','./app.js?v=532','./property.jpg','./manifest.webmanifest?v=532','./icon-180.png','./icon-512.png']))));
+const CACHE='mad-juliana-v2-3-5-33';
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html','./style.css?v=533','./app.js?v=533','./property.jpg','./manifest.webmanifest?v=533','./icon-180.png','./icon-512.png']))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));

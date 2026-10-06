@@ -34,7 +34,11 @@ The app keeps tenant and payment records in browser localStorage and a second In
 When recording a payment, an optional ECG bill deduction can be entered. The app subtracts the ECG amount from the rent value before calculating coverage, so a GHS 960 payment at GHS 160/month with a GHS 320 ECG deduction covers 4 months. ECG deduction details appear on the tenancy-agreement receipt only when a deduction was entered.
 
 
-## v2.3.5.32 Fixes
+## v2.3.5.33 Cedis only
+
+- Every resident and payment is now in cedis (Emmanuella Afriyie was stored in USD). The USD total hides itself when there are no USD payments.
+
+## v2.3.5.33 Fixes
 - New residents now get a first payment record automatically (they appear in Payments and can receive ECG bills). Optional "Amount paid" field works out "Paid to".
 - Existing residents with no payment record are backfilled on first open.
 - ECG: works on any resident with a payment; USD residents can enter the bill in cedis with an exchange rate; "Months left" renamed "Covers"; uses the latest-reaching payment and the rate that payment was made at.
@@ -44,7 +48,7 @@ When recording a payment, an optional ECG bill deduction can be entered. The app
 - Rounding/date fixes: half-cent tolerance in coverage maths, DST-safe date arithmetic, app refreshes when the day changes.
 - Corrected Stephen's January payment end (1 Jul 2026) and his next payment start (1 Jul 2026).
 
-## v2.3.5.32 Receipts
+## v2.3.5.33 Receipts
 
 - Removed the "MONTHS LEFT" line from ECG receipts. Receipts never show months left.
 
@@ -60,7 +64,7 @@ When recording a payment, an optional ECG bill deduction can be entered. The app
 - The browser uses only the Supabase publishable key; no service-role key is included in the app.
 - Existing local records are uploaded when connecting to an empty cloud account.
 
-## v2.3.5.32 fixes
+## v2.3.5.33 fixes
 - Newly added tenant details now remain visible without requiring a refresh, including monthly rate, when cloud sync is enabled.
 - ECG sheet includes a Clear ECG bill action that restores the payment's original rent coverage.
 - Swipe left on a tenant in People to reveal Delete; deletion asks for confirmation and provides Undo.

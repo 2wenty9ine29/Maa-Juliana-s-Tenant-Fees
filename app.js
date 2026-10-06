@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.5.32';
+const APP_VERSION='2.3.5.33';
 const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
 let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
@@ -47,13 +47,13 @@ const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const original={
   tenants:[
     {id:'eudia',name:'Eudia Agyei (Nurse)',currency:'GHS',rate:160,phone:'',start:'2026-03-01',end:'2027-03-01'},
-    {id:'emmanuella-afriyie',name:'Emmanuella Afriyie',currency:'USD',rate:250,phone:'',start:'2026-04-01',end:'2027-04-01'},
+    {id:'emmanuella-afriyie',name:'Emmanuella Afriyie',currency:'GHS',rate:250,phone:'',start:'2026-04-01',end:'2027-04-01'},
     {id:'stephen',name:'Stephen Awonu (Borga)',currency:'GHS',rate:160,phone:'',start:'2026-01-01',end:'2027-01-08'},
     {id:'emmanuella-osei',name:'Emmanuella Osei',currency:'GHS',rate:170,phone:'',start:'2026-06-01',end:'2027-06-01'}
   ],
   payments:[
     {id:'p-eudia',tenantId:'eudia',amount:1920,currency:'GHS',months:12,start:'2026-03-01',end:'2027-03-01',date:'2026-03-01',note:'Original tenancy payment'},
-    {id:'p-afriyie',tenantId:'emmanuella-afriyie',amount:3000,currency:'USD',months:12,start:'2026-04-01',end:'2027-04-01',date:'2026-04-01',note:'Original tenancy payment'},
+    {id:'p-afriyie',tenantId:'emmanuella-afriyie',amount:3000,currency:'GHS',months:12,start:'2026-04-01',end:'2027-04-01',date:'2026-04-01',note:'Original tenancy payment'},
     {id:'p-stephen',tenantId:'stephen',amount:965,currency:'GHS',months:6,start:'2026-01-01',end:'2026-07-01',date:'2026-01-01',note:'Original tenancy payment · GHS 1,900 − GHS 935'},
     {id:'p-stephen-1000',tenantId:'stephen',amount:1000,currency:'GHS',months:6,days:7,start:'2026-07-01',end:'2027-01-08',date:'2026-10-06',note:'Payment received · GHS 1,000 · Borga'},
     {id:'p-osei',tenantId:'emmanuella-osei',amount:2040,currency:'GHS',months:12,start:'2026-06-01',end:'2027-06-01',date:'2026-06-01',note:'Original tenancy payment'}
@@ -98,6 +98,8 @@ function runMigrations(){
   let changed=false;
   if(!Array.isArray(data.payments)){data.payments=[];changed=true}
   if(!Array.isArray(data.ecgBills)){data.ecgBills=[];changed=true}
+  // Everyone pays in cedis: one-time switch of any USD resident/payment to GHS (amounts stay the same).
+  if(!data.cedisOnlyFix){data.tenants.forEach(t=>{if(t.currency!=='GHS'){t.currency='GHS';changed=true}});data.payments.forEach(x=>{if(x.currency!=='GHS'){x.currency='GHS';changed=true}});data.cedisOnlyFix=true;changed=true}
   // Stephen's January payment was recorded as ending 1 Jun although it is 6 months from 1 Jan; the next payment started 1 Jun instead of 1 Jul.
   const ps=data.payments.find(p=>p.id==='p-stephen');if(ps&&ps.start==='2026-01-01'&&ps.end==='2026-06-01'&&Number(ps.months)===6){ps.end='2026-07-01';changed=true}
   const pb=data.payments.find(p=>p.id==='p-stephen-1000');if(pb&&pb.start==='2026-06-01'&&pb.end==='2027-01-08'){pb.start='2026-07-01';changed=true}
@@ -191,7 +193,7 @@ function renderPayments(){
   const ps=[...data.payments].filter(p=>tenant(p.tenantId)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.end||'').localeCompare(a.end||''));
   $('paymentRecordCount').textContent=ps.length;
   $('paymentTotalGHS').textContent=money(totalRecorded('GHS'),'GHS');
-  $('paymentTotalUSD').textContent=money(totalRecorded('USD'),'USD');
+  {const usd=totalRecorded('USD');$('paymentTotalUSD').textContent=money(usd,'USD');$('paymentTotalUSD').hidden=!(usd>0)}
   const groups=[];
   ps.forEach(p=>{
     const key=String(p.date||'').slice(0,7)||'unknown';
