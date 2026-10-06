@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f2ed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="manifest" href="manifest.webmanifest?v=310" />
+  <link rel="stylesheet" href="style.css?v=310" />
+  <title>Mad Juliana’s Tenants Payment</title>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <button class="brand" id="brandBtn" type="button" aria-label="Home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M9 28 32 10l23 18v25H9Z"/><path d="M19 28h26v25H19Z"/><path d="M24 53V35h16v18"/><path d="M23 20h18v10H23z"/><path d="M32 21v9M23 25h18"/><text x="32" y="49" text-anchor="middle">J</text></svg></span>
+        <span><b>Mad Juliana’s</b><small>Tenants Payment</small></span>
+      </button>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">⚙</button>
+    </header>
+
+    <main>
+      <section class="home-view view active" id="homeView">
+        <div class="property-card">
+          <div class="property-photo" aria-label="Juliana’s property">
+            <img src="property.jpg" alt="Mad Juliana’s property" />
+            <div class="tile-floor" aria-hidden="true"></div>
+            <div class="photo-shade"></div>
+            <div class="property-copy">
+              <span class="eyebrow">JULIANA AIDA ANTWI</span>
+              <h1>Tenants.<br><em>Payments.</em><br>In order.</h1>
+              <p>One simple place to see who is covered and when their payment ends.</p>
+            </div>
+          </div>
+          <div class="property-bottom">
+            <div><span>PROPERTY</span><strong>Mad Juliana’s</strong></div>
+            <div><span>TENANTS</span><strong id="homeTenantCount">4</strong></div>
+            <div><span>ACTIVE</span><strong id="homeActiveCount">3</strong></div>
+          </div>
+        </div>
+
+        <div class="home-actions">
+          <button class="action-card dark" data-view="people"><span class="action-icon">⌂</span><span><b>People</b><small>See payment end dates</small></span><i>→</i></button>
+          <button class="action-card" data-view="payments"><span class="action-icon">₵</span><span><b>Payments</b><small>Record & view payment history</small></span><i>→</i></button>
+          <button class="action-card" data-view="reminders"><span class="action-icon">◷</span><span><b>Reminders</b><small>See who is ending soon</small></span><i>→</i></button>
+        </div>
+
+        <div class="home-summary">
+          <div><span>Collected</span><strong id="homeCollected">GHS 0</strong></div>
+          <div><span>Ending soon</span><strong id="homeEndingSoon">0</strong></div>
+          <div><span>Expired</span><strong id="homeExpired">0</strong></div>
+        </div>
+      </section>
+
+      <section class="view" id="peopleView">
+        <div class="page-heading"><div><span class="eyebrow">TENANTS</span><h2>People</h2></div><button class="pill-btn" id="addTenantBtn">+ Add</button></div>
+        <div class="search-box"><span>⌕</span><input id="peopleSearch" type="search" placeholder="Search tenants" autocomplete="off"></div>
+        <div class="people-list" id="peopleList"></div>
+      </section>
+
+      <section class="view" id="paymentsView">
+        <div class="page-heading"><div><span class="eyebrow">MONEY IN</span><h2>Payments</h2></div><button class="pill-btn" id="newPaymentBtn">+ Payment</button></div>
+        <div class="payment-summary"><div><span>Total recorded</span><strong id="paymentTotal">GHS 0</strong></div><div><span>Records</span><strong id="paymentRecordCount">0</strong></div></div>
+        <div class="payments-list" id="paymentsList"></div>
+      </section>
+
+      <section class="view" id="remindersView">
+        <div class="page-heading"><div><span class="eyebrow">KEEP AN EYE ON IT</span><h2>Reminders</h2></div><span class="coming-pill">WhatsApp later</span></div>
+        <div class="reminder-note"><b>Reminder centre</b><span>WhatsApp sending is intentionally on hold for this version. The dates below are ready when you are.</span></div>
+        <div id="remindersList"></div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="page-heading"><div><span class="eyebrow">APP</span><h2>Settings</h2></div></div>
+        <div class="settings-card">
+          <div><b>Property</b><span>Mad Juliana’s Tenants Payment</span></div>
+          <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
+
+          <div class="sync-card">
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Copy the latest residents and monthly prices so they can be pasted into another copy of the app.</span></div><span class="sync-version">v<span id="appVersion">2.1.0</span></span></div>
+            <div class="sync-preview" id="pricePreview"></div>
+            <button id="copyPricesBtn" class="settings-btn sync-primary">Copy updated prices</button>
+            <button id="downloadPricesBtn" class="settings-btn">Save update as JSON</button>
+          </div>
+
+          <div class="sync-card paste-card">
+            <div><b>Paste Updated Prices</b><span>Paste the copied JSON below, then apply it. Existing payment history stays untouched.</span></div>
+            <textarea id="pricePackage" class="price-package" spellcheck="false" placeholder="Paste updated prices here…"></textarea>
+            <button id="pastePricesBtn" class="settings-btn sync-primary">Paste & update residents</button>
+          </div>
+
+          <div class="version-row"><span>App Version</span><strong>2.1.0</strong></div>
+          <button id="exportBtn" class="settings-btn">Export full backup</button>
+          <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="Main navigation">
+      <button class="tab active" data-view="home"><span>⌂</span>Home</button>
+      <button class="tab" data-view="people"><span>♙</span>People</button>
+      <button class="tab" data-view="payments"><span>₵</span>Payments</button>
+      <button class="tab" data-view="reminders"><span>◷</span>Reminders</button>
+    </nav>
+  </div>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <section class="sheet" id="tenantSheet" aria-hidden="true">
+    <div class="handle"></div>
+    <div class="sheet-head"><div><span class="eyebrow" id="tenantSheetEyebrow">TENANT</span><h3 id="tenantSheetTitle">Add tenant</h3></div><button class="close" data-close>×</button></div>
+    <form id="tenantForm">
+      <input type="hidden" id="tenantId">
+      <label>Name<input id="tenantName" required maxlength="80" placeholder="Tenant name"></label>
+      <div class="two-col"><label>Monthly rate<input id="tenantRate" required type="number" min="0" step="0.01" inputmode="decimal"></label><label>Currency<select id="tenantCurrency"><option value="GHS">GHS</option><option value="USD">USD</option></select></label></div>
+      <label>Phone number <small>optional for now</small><input id="tenantPhone" type="tel" placeholder="024…"></label>
+      <div class="two-col"><label>Start period<input id="tenantStart" type="date" required></label><label>Paid through<input id="tenantEnd" type="date" required></label></div>
+      <button class="primary-btn" type="submit">Save tenant</button>
+    </form>
+  </section>
+
+  <section class="sheet" id="tenantDetailSheet" aria-hidden="true">
+    <div class="handle"></div>
+    <div class="sheet-head"><div><span class="eyebrow">TENANT</span><h3 id="detailName">Tenant</h3><span class="detail-status" id="detailStatus"></span></div><button class="close" data-close>×</button></div>
+    <div class="coverage-card"><div><span>PAID THROUGH</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div></div>
+    <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
+    <div class="sheet-section"><div class="section-mini-head"><b>Payment history</b><span id="detailHistoryCount"></span></div><div id="detailHistory"></div></div>
+  </section>
+
+  <section class="sheet" id="paymentSheet" aria-hidden="true">
+    <div class="handle"></div>
+    <div class="sheet-head"><div><span class="eyebrow">NEW PAYMENT</span><h3>Record payment</h3></div><button class="close" data-close>×</button></div>
+    <form id="paymentForm">
+      <label>Tenant<select id="paymentTenant" required></select></label>
+      <div class="duration-grid">
+        <button type="button" data-duration="6">6 months</button><button type="button" data-duration="12">1 year</button><button type="button" data-duration="24">2 years</button><button type="button" data-duration="custom">Custom</button>
+      </div>
+      <div class="two-col"><label>Months<input id="paymentMonths" type="number" min="1" step="1" value="6"></label><label>Amount<input id="paymentAmount" type="number" min="0.01" step="0.01" required inputmode="decimal"></label></div>
+      <div class="custom-helper" id="customHelper" hidden>Enter the amount paid and we’ll work out the months + days it covers.</div>
+      <div class="period-preview" id="periodPreview"></div>
+      <label>Payment date<input id="paymentDate" type="date" required></label>
+      <label>Note <small>optional</small><input id="paymentNote" maxlength="120" placeholder="e.g. Renewal payment"></label>
+      <button class="primary-btn" type="submit">Save payment & generate receipt</button>
+    </form>
+  </section>
+
+  <section class="sheet receipt-sheet" id="receiptSheet" aria-hidden="true">
+    <div class="handle"></div>
+    <div class="sheet-head"><div><span class="eyebrow">PAYMENT SAVED</span><h3>Tenancy agreement</h3></div><button class="close" data-close>×</button></div>
+    <div class="receipt-frame"><img id="receiptImage" alt="Generated tenancy agreement receipt"></div>
+    <div class="receipt-actions"><button class="primary-btn" id="shareReceiptBtn">Share receipt</button><button class="secondary-btn" id="downloadReceiptBtn">Save image</button></div>
+  </section>
+
+  <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
+  <script src="app.js?v=310"></script>
+</body>
+</html>
