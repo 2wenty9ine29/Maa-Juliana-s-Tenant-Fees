@@ -20,3 +20,11 @@ The payment form now treats the amount as the source of truth for coverage. As t
 
 ## v2.1.2 update links
 Settings now provides Copy update link and Paste Update Link. The link contains the current resident names, monthly prices, currencies, phone numbers, and dates. Applying an update changes resident details/prices without changing existing payment history, and Undo is available. JSON remains available only as a backup option.
+
+
+### Clipboard resident updates
+Copy Updated Prices copies a compact update link to the clipboard. On another device, use Paste Updated Prices; the app reads the clipboard, shows the last-changed date, app version, and resident prices, then waits for “Okay, add update” before changing anything. Existing payment history is preserved.
+
+
+## Durable local storage (v2.1.6)
+The app keeps tenant and payment records in browser localStorage and a second IndexedDB copy. On startup it restores the newest local copy, and it requests persistent browser storage where supported. This protects records against normal refreshes, closing the app, and long periods of inactivity better than localStorage alone. Data is still device/browser-local; use the full backup or update-link tools to move data to another device/browser.

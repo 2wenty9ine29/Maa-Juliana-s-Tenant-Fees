@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="manifest" href="manifest.webmanifest?v=310" />
-  <link rel="stylesheet" href="style.css?v=310" />
+  <link rel="manifest" href="manifest.webmanifest?v=317" />
+  <link rel="stylesheet" href="style.css?v=317" />
   <title>Mad Juliana’s Tenants Payment</title>
 </head>
 <body>
@@ -80,19 +80,21 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.2</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.7</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
           </div>
 
           <div class="sync-card paste-card">
-            <div><b>Paste Update Link</b><span>Paste an update link from another copy of the app, then apply it. Existing payment history stays untouched.</span></div>
-            <textarea id="updateLink" class="price-package link-box" spellcheck="false" placeholder="Paste update link here…"></textarea>
-            <button id="applyLinkBtn" class="settings-btn sync-primary">Paste & update residents</button>
+            <div><b>Paste Updated Prices</b><span>Reads the update link directly from this phone’s clipboard. You’ll review the changes before anything is added.</span></div>
+            <button id="applyLinkBtn" class="settings-btn sync-primary">📋 Paste from clipboard</button>
+            <div id="updatePreview" class="update-preview" hidden></div>
+            <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.1.2</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.1.7</strong></div>
+          <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
         </div>
@@ -155,6 +157,6 @@
   </section>
 
   <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
-  <script src="app.js?v=310"></script>
+  <script src="app.js?v=316"></script>
 </body>
 </html>

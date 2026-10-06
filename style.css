@@ -4,3 +4,27 @@
 .custom-helper{background:#f1ece5;border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin:-4px 0 12px;font-size:10px;line-height:1.45;color:#777}.sheet input[readonly]{background:#f1ece5;color:#777}
 .sync-card{margin-top:14px;padding:14px 0 2px;border-top:1px solid var(--line)}.sync-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.sync-head>div{flex:1}.sync-head b{font-size:13px}.sync-head span{font-size:10px;line-height:1.45}.sync-version{flex:0 0 auto;background:#eee9e2;color:#777;border-radius:99px;padding:6px 9px;font-weight:700}.sync-preview{margin-top:10px;background:#f5f1eb;border:1px solid var(--line);border-radius:13px;padding:11px 12px;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#67625b;white-space:pre-wrap;max-height:150px;overflow:auto}.sync-primary{background:var(--dark);color:#fff;border-color:var(--dark)}.paste-card{margin-top:18px}.price-package{width:100%;min-height:105px;margin-top:10px;border:1px solid var(--line);background:#fdfbf8;border-radius:13px;padding:11px 12px;resize:vertical;outline:none;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}.price-package:focus{border-color:#bbb2a7;box-shadow:0 0 0 3px rgba(32,32,30,.05)}.version-row{display:flex!important;justify-content:space-between;align-items:center;border-bottom:0!important;padding-bottom:2px!important;margin-top:12px}.version-row span{font-size:11px!important;color:var(--muted)!important}.version-row strong{font-size:11px}.settings-card>.settings-btn{margin-top:10px}
 .link-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;}
+
+.update-preview{margin-top:12px;background:#f5f1eb;border:1px solid var(--line);border-radius:13px;padding:12px}.update-meta{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.update-meta b{font-size:12px}.update-meta span{font-size:10px;color:var(--muted)}.update-residents{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.update-residents>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:11px}.update-residents>div:last-child{border-bottom:0}.update-residents strong{font-size:11px}.update-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;margin-top:11px}.update-actions .settings-btn{margin-top:0}.update-preview[hidden]{display:none!important}
+
+.reminder-print{border:1px solid var(--line);background:#20201e;color:#fff;border-radius:10px;padding:7px 9px;font-size:9px;font-weight:700;flex:0 0 auto}.no-receipt{font-size:9px;color:#aaa;white-space:nowrap}.reminder-row .status{flex:0 0 auto}
+
+.storage-status{margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#f1ece5;display:flex;flex-direction:column;gap:3px}.storage-status b{font-size:12px}.storage-status span,.storage-status small{font-size:10px;line-height:1.45;color:#777}
+
+/* v2.1.7 typography: larger, clearer text while preserving the existing layout. */
+.eyebrow{font-size:14px!important;line-height:1.2!important}
+.page-heading h2{font-size:45px!important;line-height:1.02!important}
+h1{font-size:53px!important;line-height:.98!important}
+.property-copy p{font-size:15px!important;line-height:1.45!important}
+.property-bottom span,.home-summary span,.action-card small,.search-box input,.person-main span,.payment-main span,.reminder-row span,.history-row span,.settings-card span,.settings-card b,.settings-btn,.sync-head span,.sync-preview,.price-package,.update-meta span,.update-residents>div,.update-residents strong,.version-row span,.version-row strong,.storage-status span,.storage-status small,.coming-pill,.reminder-print,.no-receipt,.status,.payment-date small,.payment-amount,.tab,.sheet label,.sheet label small,.duration-grid button,.period-preview span,.period-preview small,.coverage-card span,.detail-status,.section-mini-head span,.custom-helper,.toast span,.toast button{font-size:15px!important;line-height:1.35!important}
+.action-card b,.property-bottom strong,.home-summary strong,.person-main strong,.payment-main strong,.reminder-row strong,.settings-card>div>b,.sync-head b,.update-meta b,.payment-date b,.sheet-head h3,.coverage-card strong,.history-row b,.history-row strong,.primary-btn,.secondary-btn{font-size:16px!important}
+.payment-summary strong{font-size:25px!important}
+.payment-summary span{font-size:15px!important}
+.duration-grid button{padding:9px 3px!important}
+.person-row,.payment-row,.reminder-row{padding-top:10px!important;padding-bottom:10px!important}
+.person-main span,.payment-main span,.reminder-row span,.history-row span{margin-top:2px!important}
+.search-box{min-height:48px}
+.sheet-head{margin-bottom:16px!important}
+.sheet input,.sheet select{height:46px!important}
+.tabbar{height:78px!important}
+@media(max-width:480px){h1{font-size:49px!important}.page-heading h2{font-size:42px!important}.property-copy p{font-size:14px!important}.sheet-head h3{font-size:22px!important}.payment-summary strong{font-size:23px!important}.tab{font-size:13px!important}}
