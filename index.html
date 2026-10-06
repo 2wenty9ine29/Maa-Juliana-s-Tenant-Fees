@@ -80,19 +80,19 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Copy the latest residents and monthly prices so they can be pasted into another copy of the app.</span></div><span class="sync-version">v<span id="appVersion">2.1.0</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.2</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
-            <button id="copyPricesBtn" class="settings-btn sync-primary">Copy updated prices</button>
-            <button id="downloadPricesBtn" class="settings-btn">Save update as JSON</button>
+            <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
+            <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
           </div>
 
           <div class="sync-card paste-card">
-            <div><b>Paste Updated Prices</b><span>Paste the copied JSON below, then apply it. Existing payment history stays untouched.</span></div>
-            <textarea id="pricePackage" class="price-package" spellcheck="false" placeholder="Paste updated prices here…"></textarea>
-            <button id="pastePricesBtn" class="settings-btn sync-primary">Paste & update residents</button>
+            <div><b>Paste Update Link</b><span>Paste an update link from another copy of the app, then apply it. Existing payment history stays untouched.</span></div>
+            <textarea id="updateLink" class="price-package link-box" spellcheck="false" placeholder="Paste update link here…"></textarea>
+            <button id="applyLinkBtn" class="settings-btn sync-primary">Paste & update residents</button>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.1.0</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.1.2</strong></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
         </div>
@@ -138,7 +138,7 @@
       <div class="duration-grid">
         <button type="button" data-duration="6">6 months</button><button type="button" data-duration="12">1 year</button><button type="button" data-duration="24">2 years</button><button type="button" data-duration="custom">Custom</button>
       </div>
-      <div class="two-col"><label>Months<input id="paymentMonths" type="number" min="1" step="1" value="6"></label><label>Amount<input id="paymentAmount" type="number" min="0.01" step="0.01" required inputmode="decimal"></label></div>
+      <div class="two-col"><label>Months<input id="paymentMonths" type="number" min="1" step="1" value="6" readonly></label><label>Amount<input id="paymentAmount" type="number" min="0.01" step="0.01" required inputmode="decimal"></label></div>
       <div class="custom-helper" id="customHelper" hidden>Enter the amount paid and we’ll work out the months + days it covers.</div>
       <div class="period-preview" id="periodPreview"></div>
       <label>Payment date<input id="paymentDate" type="date" required></label>

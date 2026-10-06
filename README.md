@@ -7,8 +7,16 @@ Features: one property/group, tenant profiles, payment coverage, 6-month/1-year/
 Custom payments use the tenant's monthly rate and calendar month length to estimate the exact coverage period. Example: GHS 1,000 at GHS 160/month = 6 months + 7 days when the coverage begins on July 1.
 
 
-## v2.1.0 additions
+## v2.1.1 additions
 - House/J app icon.
 - Copy Updated Prices package: copies residents, monthly rates, currencies, phone numbers and coverage dates as JSON.
 - Paste Updated Prices: applies matching resident/rate updates without overwriting payment history, with Undo.
 - App version shown in Settings.
+
+
+### Amount-driven coverage
+The payment form now treats the amount as the source of truth for coverage. As the amount is typed, the app immediately calculates the whole months plus any remaining days it covers at the tenant’s monthly rate. The preset 6-month, 1-year, and 2-year buttons fill the matching amount; changing that amount recalculates the coverage automatically.
+
+
+## v2.1.2 update links
+Settings now provides Copy update link and Paste Update Link. The link contains the current resident names, monthly prices, currencies, phone numbers, and dates. Applying an update changes resident details/prices without changing existing payment history, and Undo is available. JSON remains available only as a backup option.
