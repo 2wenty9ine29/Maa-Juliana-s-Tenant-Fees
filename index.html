@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="manifest" href="manifest.webmanifest?v=318" />
-  <link rel="stylesheet" href="style.css?v=318" />
+  <link rel="manifest" href="manifest.webmanifest?v=332" />
+  <link rel="stylesheet" href="style.css?v=332" />
   <title>Mad Juliana’s Tenants Payment</title>
 </head>
 <body>
@@ -48,11 +48,7 @@
           <button class="action-card" data-view="reminders"><span class="action-icon">◷</span><span><b>Reminders</b><small>See who is ending soon</small></span><i>→</i></button>
         </div>
 
-        <div class="home-summary">
-          <div><span>Collected</span><strong id="homeCollected">GHS 0</strong></div>
-          <div><span>Ending soon</span><strong id="homeEndingSoon">0</strong></div>
-          <div><span>Expired</span><strong id="homeExpired">0</strong></div>
-        </div>
+        
       </section>
 
       <section class="view" id="peopleView">
@@ -63,7 +59,7 @@
 
       <section class="view" id="paymentsView">
         <div class="page-heading"><div><span class="eyebrow">MONEY IN</span><h2>Payments</h2></div><button class="pill-btn" id="newPaymentBtn">+ Payment</button></div>
-        <div class="payment-summary"><div><span>Total recorded</span><strong id="paymentTotal"><span class="payment-total-line">GHS 0.00</span><span class="payment-total-line">USD $0.00</span></strong></div><div><span>Records</span><strong id="paymentRecordCount">0</strong></div></div>
+        <div class="payment-summary"><div><span>Total recorded</span><strong class="currency-total" id="paymentTotalGHS">GHS 0.00</strong><strong class="currency-total" id="paymentTotalUSD">$0.00</strong></div><div><span>Records</span><strong id="paymentRecordCount">0</strong></div></div>
         <div class="payments-list" id="paymentsList"></div>
       </section>
 
@@ -80,7 +76,7 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.7</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.2.2</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
@@ -93,7 +89,7 @@
             <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.1.7</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.2.2</strong></div>
           <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
@@ -119,7 +115,7 @@
       <label>Name<input id="tenantName" required maxlength="80" placeholder="Tenant name"></label>
       <div class="two-col"><label>Monthly rate<input id="tenantRate" required type="number" min="0" step="0.01" inputmode="decimal"></label><label>Currency<select id="tenantCurrency"><option value="GHS">GHS</option><option value="USD">USD</option></select></label></div>
       <label>Phone number <small>optional for now</small><input id="tenantPhone" type="tel" placeholder="024…"></label>
-      <div class="two-col"><label>Start period<input id="tenantStart" type="date" required></label><label>Paid through<input id="tenantEnd" type="date" required></label></div>
+      <div class="two-col"><label>Start period<input id="tenantStart" type="date" required></label><label>Paid to<input id="tenantEnd" type="date" required></label></div>
       <button class="primary-btn" type="submit">Save tenant</button>
     </form>
   </section>
@@ -127,8 +123,8 @@
   <section class="sheet" id="tenantDetailSheet" aria-hidden="true">
     <div class="handle"></div>
     <div class="sheet-head"><div><span class="eyebrow">TENANT</span><h3 id="detailName">Tenant</h3><span class="detail-status" id="detailStatus"></span></div><button class="close" data-close>×</button></div>
-    <div class="coverage-card"><div><span>PAID THROUGH</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div></div>
-    <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
+    <div class="coverage-card"><div><span>PAID TO</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div></div>
+    <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="detailReceiptBtn">Receipt</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
     <div class="sheet-section"><div class="section-mini-head"><b>Payment history</b><span id="detailHistoryCount"></span></div><div id="detailHistory"></div></div>
   </section>
 
@@ -157,6 +153,6 @@
   </section>
 
   <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
-  <script src="app.js?v=318"></script>
+  <script src="app.js?v=332"></script>
 </body>
 </html>
