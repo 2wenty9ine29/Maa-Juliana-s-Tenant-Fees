@@ -1,4 +1,4 @@
-const APP_VERSION='2.1.7';
+const APP_VERSION='2.1.9';
 const DB_NAME='mad-juliana-tenants-db';
 const DB_STORE='app';
 const DB_KEY='state';
@@ -99,16 +99,26 @@ function renderPeople(){
   $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);return `<button class="person-row" data-person="${t.id}"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid through ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span><i>›</i></button>`}).join('')||`<div class="empty">No tenants found.</div>`;
   document.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
 }
+const approxLabel=p=>{const m=(Number(p.months)||0)+((Number(p.days)||0)>=15?1:0);return m?`About ${m} month${m===1?'':'s'}`:'Less than a month'};
+const durLabel=p=>{const m=Number(p.months)||0,d=Number(p.days)||0;return [m?`${m} mo`:'',d?`${d} d`:''].filter(Boolean).join(' ')||'Custom'};
 function renderPayments(){
   const ps=[...data.payments].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  $('paymentRecordCount').textContent=ps.length;$('paymentTotal').textContent=money(totalRecorded('GHS'),'GHS');
-  $('paymentsList').innerHTML=ps.map(p=>{const t=tenant(p.tenantId);const [statusLabel,statusClass]=status(t);return `<button class="payment-row ${statusClass}" data-person="${t.id}"><div class="payment-date"><b>${new Date(p.date+'T00:00:00').toLocaleDateString('en-US',{month:'short'})}</b><small>${new Date(p.date+'T00:00:00').getFullYear()}</small></div><div class="payment-main"><strong>${esc(t.name)}</strong><span>${fmtDate(p.start)} → ${fmtDate(p.end)} · ${p.months?`${p.months} month${p.months===1?'':'s'}${p.days?` + ${p.days} day${p.days===1?'':' days'}`:''}`:'Custom'}</span></div><span class="status ${statusClass}">${statusLabel}</span><strong class="payment-amount">${money(p.amount,p.currency)}</strong><i>›</i></button>`}).join('')||`<div class="empty">No payments yet.</div>`;
+  $('paymentRecordCount').textContent=ps.length;
+  const cur=[...new Set(ps.map(p=>p.currency))];
+  $('paymentTotal').innerHTML=cur.map(c=>`<span class="ptotal">${money(totalRecorded(c),c)}</span>`).join('')||'GHS 0.00';
+  let lastKey='';
+  $('paymentsList').innerHTML=ps.map(p=>{
+    const t=tenant(p.tenantId);const [statusLabel,statusClass]=status(t);
+    const d=new Date(p.date+'T00:00:00');const key=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const head=key!==lastKey?`<div class="month-head">${key}</div>`:'';lastKey=key;
+    const badge=statusClass==='active'?'<i class="dot" title="Active"></i>':`<span class="status ${statusClass}">${statusLabel}</span>`;
+    return `${head}<button class="payment-row ${statusClass}" data-person="${t.id}"><div class="pr-top"><span class="pr-name">${badge}<strong>${esc(t.name)}</strong></span><strong class="payment-amount">${money(p.amount,p.currency)}</strong></div><div class="pr-sub">${approxLabel(p)}</div></button>`}).join('')||`<div class="empty">No payments yet.</div>`;
   document.querySelectorAll('#paymentsList [data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
 }
 function latestPayment(id){return [...data.payments].filter(p=>p.tenantId===id).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||null}
 function renderReminders(){
   const sorted=[...data.tenants].sort((a,b)=>a.end.localeCompare(b.end));
-  $('remindersList').innerHTML=sorted.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);return `<div class="reminder-row"><div class="avatar small">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><strong>${esc(t.name)}</strong><span>Payment ends ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span>${p?`<button class="reminder-print" type="button" data-print-receipt="${esc(t.id)}" aria-label="Print current receipt for ${esc(t.name)}">Print</button>`:'<span class="no-receipt">No receipt</span>'}</div>`}).join('');
+  $('remindersList').innerHTML=sorted.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);return `<div class="reminder-row"><div class="avatar small">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><strong>${esc(t.name)}</strong><span>Payment ends ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span>${p?`<button class="reminder-print" type="button" data-print-receipt="${esc(t.id)}" aria-label="Open current receipt for ${esc(t.name)}">Receipt</button>`:'<span class="no-receipt">No receipt</span>'}</div>`}).join('');
   document.querySelectorAll('[data-print-receipt]').forEach(b=>b.onclick=()=>printCurrentReceipt(b.dataset.printReceipt));
 }
 $('peopleSearch').oninput=renderPeople;
@@ -123,12 +133,26 @@ function setDuration(v){document.querySelectorAll('[data-duration]').forEach(b=>
 document.querySelectorAll('[data-duration]').forEach(b=>b.onclick=()=>setDuration(b.dataset.duration));
 $('paymentTenant').onchange=()=>{const t=tenant($('paymentTenant').value);const custom=document.querySelector('[data-duration].selected')?.dataset.duration==='custom';if(t&&!custom)$('paymentAmount').value=(t.rate*Number($('paymentMonths').value||6)).toFixed(2);updatePaymentPreview()};$('paymentMonths').oninput=updatePaymentPreview;$('paymentAmount').oninput=updatePaymentPreview;
 function updatePaymentPreview(){const t=tenant($('paymentTenant').value);if(!t){$('periodPreview').textContent='';return}const amount=Number($('paymentAmount').value||0);const start=t.end;let months=0,days=0,end=start;if(amount>0){const x=customCoverage(start,amount,t.rate);months=x.months;days=x.days;end=x.end;$('paymentMonths').value=months||'';}const label=amount>0?coverageLabel(months,days):'Enter amount';$('periodPreview').innerHTML=`<span>PAYMENT COVERS</span><b>${fmtDate(start)} → ${fmtDate(end)}</b><small>${label} · ${money(amount,t.currency)}</small>`}
-function makeReceipt(t,p){const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1250;const c=canvas.getContext('2d');c.fillStyle='#fbfbfa';c.fillRect(0,0,1000,1250);c.fillStyle='#151515';c.font='700 42px Arial';c.textAlign='center';c.fillText('TENANCY AGREEMENT',500,95);c.fillRect(385,108,230,4);c.textAlign='left';c.font='700 28px Arial';const duration=receiptCoverageLabel(p);const periodText=`${monthYear(p.start)} TO ${monthYear(p.end)}${duration&&duration!=='0 days'?` · ${duration.toUpperCase()}`:''}`;const rows=[['LAND LADY:','Juliana Aida Antwi'],['TENANT:',t.name],['PERIOD:',periodText],['MONTHLY RATE:',money(t.rate,t.currency)],['START PERIOD:',monthYear(p.start)],['END PERIOD:',monthYear(p.end)],['AMOUNT:',money(p.amount,p.currency)]];let y=180;rows.forEach(([a,b])=>{c.font='700 27px Arial';c.fillText(a,120,y);c.font='400 27px Arial';c.fillText(b,430,y);y+=62});c.font='700 25px Arial';c.fillText('Landlady:',120,690);c.font='400 25px Arial';c.fillText('Juliana Aida Antwi',120,725);c.fillText('Signed',120,760);c.font='700 25px Arial';c.fillText('Tenant:',600,690);c.font='400 25px Arial';c.fillText(t.name,600,725);c.fillText('Signed',600,760);c.strokeStyle='#dedbd6';c.lineWidth=2;c.strokeRect(65,55,870,805);c.fillStyle='#777';c.font='400 18px Arial';c.fillText('Generated by Mad Juliana’s Tenants Payment',120,1180);c.fillText(`Payment date: ${fmtDate(p.date)}`,120,1210);return canvas.toDataURL('image/png')}
+function makeReceipt(t,p){
+  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1270;const c=canvas.getContext('2d');
+  c.fillStyle='#fff';c.fillRect(0,0,1000,1270);c.fillStyle='#000';c.textBaseline='alphabetic';
+  const F='Arial, Helvetica, sans-serif';
+  c.textAlign='center';c.font=`700 25px ${F}`;c.fillText('TENANCY AGREEMENT',500,138);
+  const w=c.measureText('TENANCY AGREEMENT').width;c.fillRect(500-w/2,146,w,2.5);
+  const m=(p.note||'').split('·').map(x=>x.trim()).find(x=>/[−-]/.test(x)&&/\d/.test(x));
+  if(m){c.font=`700 24px ${F}`;c.fillText(`${m.replace(/,/g,'').replace(/\s*[−-]\s*/,'- ')} = ${money(p.amount,p.currency).replace(/,/g,'')}`,600,210)}
+  const rows=[['LAND LADY:','JULIANA AIDA ANTWI'],['TENANT:',t.name.toUpperCase()],['PERIOD:',`${monthYear(p.start)} TO ${monthYear(p.end)}`],['MONTHLY RATE:',money(t.rate,t.currency)],['START PERIOD:',monthYear(p.start)],['END PERIOD:',monthYear(p.end)],['AMOUNT:',money(p.amount,p.currency)]];
+  let y=243;
+  rows.forEach(([a,b])=>{c.textAlign='left';c.font=`700 24px ${F}`;c.fillText(a,122,y);c.textAlign='center';c.font=`400 24px ${F}`;c.fillText(b,605,y);y+=43});
+  c.textAlign='left';c.font=`700 24px ${F}`;c.fillText('Landlady:',122,530);c.fillText('Tenant:',532,530);
+  c.font=`400 24px ${F}`;c.fillText('Juliana Aida Antwi',122,565);c.fillText(t.name,532,565);c.fillText('Signed',122,595);c.fillText('Signed',532,595);
+  c.fillStyle='#8a8a8a';c.font=`400 15px ${F}`;c.fillText(`Payment date: ${fmtDate(p.date)}`,122,1215);
+  return canvas.toDataURL('image/png')}
 function monthYear(s){return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
 $('shareReceiptBtn').onclick=async()=>{if(!lastReceipt)return;try{const blob=await (await fetch(lastReceipt)).blob();const file=new File([blob],'tenancy-agreement.png',{type:'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({title:'Tenancy Agreement',files:[file]});else downloadReceipt()}catch(e){downloadReceipt()}};
 function downloadReceipt(){const a=document.createElement('a');a.href=lastReceipt;a.download='tenancy-agreement.png';a.click()}
 $('downloadReceiptBtn').onclick=downloadReceipt;
-function printCurrentReceipt(id){const t=tenant(id),p=latestPayment(id);if(!t||!p){toast('No receipt available for this tenant yet');return}const receipt=makeReceipt(t,p);const win=window.open('','_blank','width=820,height=1000');if(!win){toast('Allow pop-ups to print the receipt');return}win.document.write(`<!doctype html><html><head><title>Tenancy Agreement - ${esc(t.name)}</title><style>html,body{margin:0;background:#eee}body{display:flex;justify-content:center;padding:20px}img{width:min(760px,100%);height:auto;background:#fff}@media print{body{padding:0;background:#fff}img{width:100%}}</style></head><body><img src="${receipt}" onload="setTimeout(()=>window.print(),150)"></body></html>`);win.document.close()}
+function printCurrentReceipt(id){const t=tenant(id),p=latestPayment(id);if(!t||!p){toast('No receipt available for this tenant yet');return}lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;openSheet('receiptSheet')}
 
 $('paymentForm').onsubmit=e=>{e.preventDefault();const t=tenant($('paymentTenant').value);if(!t){toast('Choose a tenant first');return}const amount=Number($('paymentAmount').value);if(!(amount>0)){toast('Enter a payment amount');return}const start=t.end;const calc=customCoverage(start,amount,t.rate);if(calc.months===0&&calc.days===0){toast('Payment is too small to cover any time');return}const old=clone(data);const p={id:'p-'+Date.now(),tenantId:t.id,amount,currency:t.currency,months:calc.months,days:calc.days,start,end:calc.end,date:$('paymentDate').value||iso(today),note:$('paymentNote').value.trim()};data.payments.push(p);t.end=calc.end;save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ${money(amount,t.currency)} recorded · ${receiptCoverageLabel(p)}`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
 
