@@ -1,4 +1,7 @@
-const APP_VERSION='2.3.6';
+const APP_VERSION='2.3.5.29';
+const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
+let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
 const DB_NAME='mad-juliana-tenants-db';
 const DB_STORE='app';
 const DB_KEY='state';
@@ -62,7 +65,7 @@ function openStateDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in
 async function readStateDB(){const db=await openStateDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly');const req=tx.objectStore(DB_STORE).get(DB_KEY);req.onsuccess=()=>{db.close();resolve(req.result||null)};req.onerror=()=>{db.close();reject(req.error)}})}
 async function writeStateDB(snapshot){const db=await openStateDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(snapshot,DB_KEY);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error||new Error('Could not save local database'))}})}
 async function requestPersistentStorage(){try{if(navigator.storage?.persist){const already=await navigator.storage.persisted();if(!already)await navigator.storage.persist();}}catch{} }
-function save(){const snapshot={...clone(data),updatedAt:new Date().toISOString()};data=snapshot;storageLastSaved=snapshot.updatedAt;try{localStorage.setItem(KEY,JSON.stringify(snapshot))}catch{};writeStateDB(snapshot).then(()=>{storageReady=true;renderStorageStatus()}).catch(()=>renderStorageStatus());requestPersistentStorage();renderStorageStatus()}
+function save(){const snapshot={...clone(data),updatedAt:new Date().toISOString()};const stamp=snapshot.updatedAt;(snapshot.tenants||[]).forEach(t=>t.updatedAt=stamp);(snapshot.payments||[]).forEach(p=>p.updatedAt=stamp);(snapshot.ecgBills||[]).forEach(e=>e.updatedAt=stamp);data=snapshot;storageLastSaved=snapshot.updatedAt;try{localStorage.setItem(KEY,JSON.stringify(snapshot))}catch{};writeStateDB(snapshot).then(()=>{storageReady=true;renderStorageStatus()}).catch(()=>renderStorageStatus());requestPersistentStorage();renderStorageStatus();queueCloudSync()}
 async function hydratePersistentState(){try{const stored=await readStateDB();if(stored?.tenants?.length){const localTime=Date.parse(data.updatedAt||'');const dbTime=Date.parse(stored.updatedAt||'');if(dbTime>localTime){data=stored;try{localStorage.setItem(KEY,JSON.stringify(data))}catch{};storageLastSaved=stored.updatedAt;render()}}storageReady=true;renderStorageStatus()}catch{storageReady=false;renderStorageStatus()}requestPersistentStorage();if(!data.updatedAt)save()}
 function tenant(id){return data.tenants.find(t=>t.id===id)}
 function pricePackage(){return {app:'mad-juliana-tenants',type:'tenant-price-update',version:APP_VERSION,exportedAt:new Date().toISOString(),tenants:data.tenants.map(t=>({id:t.id,name:t.name,currency:t.currency,rate:t.rate,phone:t.phone||'',start:t.start,end:t.end}))}}
@@ -95,8 +98,15 @@ function renderHome(){
 function renderPeople(){
   const q=($('peopleSearch')?.value||'').toLowerCase().trim();
   const list=data.tenants.filter(t=>t.name.toLowerCase().includes(q));
-  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const detail=ecg>0?` · rent ${money(rent,t.currency)} · ECG ${money(ecg,t.currency)} deducted`:'';return `<button class="person-row" data-person="${t.id}"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid to ${fmtDate(t.end)}${detail}</span></div><span class="status ${cls}">${label}</span><i>›</i></button>`}).join('')||`<div class="empty">No tenants found.</div>`;
-  document.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
+  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const detail=ecg>0?` · rent ${money(rent,t.currency)} · ECG ${money(ecg,t.currency)} deducted`:'';return `<div class="person-swipe" data-swipe-tenant="${esc(t.id)}"><button class="person-row" data-person="${esc(t.id)}" type="button"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid to ${fmtDate(t.end)}${detail}</span></div><span class="status ${cls}">${label}</span><i>›</i></button><button class="swipe-delete" type="button" data-delete-tenant="${esc(t.id)}" aria-label="Delete ${esc(t.name)}">Delete</button></div>`}).join('')||`<div class="empty">No tenants found.</div>`;
+  document.querySelectorAll('#peopleList .person-swipe').forEach(w=>{
+    const row=w.querySelector('[data-person]'); let startX=0,startY=0,dragging=false,moved=false;
+    w.addEventListener('pointerdown',e=>{if(e.target.closest('.swipe-delete'))return;startX=e.clientX;startY=e.clientY;dragging=true;moved=false;w.setPointerCapture?.(e.pointerId)});
+    w.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-startX,dy=e.clientY-startY;if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){moved=true;w.classList.toggle('swiping',dx<0)}});
+    w.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;const dx=e.clientX-startX,dy=e.clientY-startY;if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){w.classList.toggle('open',dx<-65);w.classList.remove('swiping')}else if(!moved){if(w.classList.contains('open'))w.classList.remove('open');else openDetail(row.dataset.person)} });
+    w.addEventListener('pointercancel',()=>{dragging=false;w.classList.remove('swiping')});
+  });
+  document.querySelectorAll('#peopleList [data-delete-tenant]').forEach(b=>b.onclick=()=>deleteTenant(b.dataset.deleteTenant));
 }
 function approximateCoverage(p){
   const months=Number(p.months)||0, days=Number(p.days)||0;
@@ -134,7 +144,7 @@ function renderReminders(){
 }
 $('peopleSearch').oninput=renderPeople;
 
-function openDetail(id){selectedTenant=id;const t=tenant(id);const p=latestPayment(id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';$('detailRentAmount').textContent=p?money(rent,t.currency):'—';$('detailEcgAmount').textContent=ecg>0?money(ecg,t.currency):'None';$('detailCoverage').textContent=p?approximateCoverage(p):'No payment yet';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
+function openDetail(id){const t=tenant(id);if(!t)return;selectedTenant=id;const p=latestPayment(id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';$('detailRentAmount').textContent=p?money(rent,t.currency):'—';$('detailEcgAmount').textContent=ecg>0?money(ecg,t.currency):'None';$('detailCoverage').textContent=p?approximateCoverage(p):'No payment yet';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
 $('extendBtn').onclick=()=>{closeSheets();openPaymentSheet(selectedTenant)};
 $('ecgBillBtn').onclick=()=>{closeSheets();openEcgSheet(selectedTenant)};
 $('detailReceiptBtn').onclick=()=>openReceiptForTenant(selectedTenant,true);
@@ -177,6 +187,61 @@ function makeReceipt(t,p){
 function makeEcgReceipt(t,e){const p=latestPayment(t.id);return p?makeReceipt(t,p):makeReceipt(t,{...e,type:'ecg',start:e.originalStart||t.start,end:e.newEnd||t.end,months:e.monthsLeft,days:e.daysLeft,amount:e.totalAmount,netAmount:e.newTotal,ecgDeduction:e.ecgDeduction})}
 function monthYear(s){return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
 function dataUrlToBlob(dataUrl){const [head,body]=String(dataUrl).split(',');const mime=(head.match(/data:([^;]+)/)||[])[1]||'image/png';const bin=atob(body);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new Blob([bytes],{type:mime})}
+
+function cloudStatus(text){const el=$('cloudSyncStatus');if(el)el.textContent=text;const badge=$('cloudBadge');if(badge)badge.textContent=text==='Connected'?'Live':text}
+function cloudSetSignedIn(user){cloudUser=user||null;const out=$('cloudSignedOut'),inn=$('cloudSignedIn');if(out)out.hidden=!!user;if(inn)inn.hidden=!user;if($('cloudUserEmail'))$('cloudUserEmail').textContent=user?.email||'';cloudStatus(user?'Connected':'Offline')}
+function ensureCloudIds(){if(!data.tenants)data.tenants=[];if(!data.payments)data.payments=[];if(!data.ecgBills)data.ecgBills=[];data.tenants.forEach(t=>{if(!t.cloudId)t.cloudId=crypto.randomUUID()});data.payments.forEach(p=>{if(!p.cloudId)p.cloudId=crypto.randomUUID()});data.ecgBills.forEach(e=>{if(!e.cloudId)e.cloudId=crypto.randomUUID()})}
+function tenantCloudId(id){return tenant(id)?.cloudId||null}
+function queueCloudSync(){if(!cloudUser||applyingCloud)return;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncToCloud(),500)}
+async function syncToCloud(){
+  if(!cloudUser||cloudSyncBusy||!supabaseClient)return;
+  cloudSyncBusy=true;cloudStatus('Syncing…');
+  try{
+    ensureCloudIds();
+    const localTenantIds=data.tenants.map(t=>t.cloudId).filter(Boolean), localPaymentIds=data.payments.map(p=>p.cloudId).filter(Boolean), localEcgIds=data.ecgBills.map(e=>e.cloudId).filter(Boolean);
+    // Delete cloud records that no longer exist locally. ECG first, then payments, then tenants.
+    {const r=await supabaseClient.from('ecg_deductions').select('id').eq('owner_id',cloudUser.id);if(r.error)throw r.error;const extras=(r.data||[]).filter(x=>!localEcgIds.includes(x.id)).map(x=>x.id);if(extras.length){const d=await supabaseClient.from('ecg_deductions').delete().in('id',extras);if(d.error)throw d.error}}
+    if(localPaymentIds.length){const r=await supabaseClient.from('payments').select('id').eq('owner_id',cloudUser.id);if(r.error)throw r.error;const extras=(r.data||[]).filter(x=>!localPaymentIds.includes(x.id)).map(x=>x.id);if(extras.length){const d=await supabaseClient.from('payments').delete().in('id',extras);if(d.error)throw d.error}}else{const d=await supabaseClient.from('payments').delete().eq('owner_id',cloudUser.id);if(d.error)throw d.error}
+    if(localTenantIds.length){const r=await supabaseClient.from('tenants').select('id').eq('owner_id',cloudUser.id);if(r.error)throw r.error;const extras=(r.data||[]).filter(x=>!localTenantIds.includes(x.id)).map(x=>x.id);if(extras.length){const d=await supabaseClient.from('tenants').delete().in('id',extras);if(d.error)throw d.error}}else{const d=await supabaseClient.from('tenants').delete().eq('owner_id',cloudUser.id);if(d.error)throw d.error}
+    const stamp=new Date().toISOString();
+    const tenantRows=data.tenants.map(t=>({id:t.cloudId,owner_id:cloudUser.id,name:t.name,phone:t.phone||null,currency:t.currency||'GHS',monthly_rate:Number(t.rate)||0,start_date:t.start||null,paid_to:t.end||null,notes:t.notes||null,updated_at:t.updatedAt||stamp}));
+    const tenantRes=tenantRows.length?await supabaseClient.from('tenants').upsert(tenantRows,{onConflict:'id'}):{error:null};if(tenantRes.error)throw tenantRes.error;
+    const paymentRows=data.payments.map(p=>({id:p.cloudId,owner_id:cloudUser.id,tenant_id:tenantCloudId(p.tenantId),amount:Number(p.amount)||0,currency:p.currency||'GHS',monthly_rate:Number(tenant(p.tenantId)?.rate)||Number(p.monthlyRate)||0,start_date:p.start||null,end_date:p.end||null,months:Number(p.months)||0,days:Number(p.days)||0,payment_date:p.date||stamp,note:p.note||null,net_amount:p.netAmount==null?Number(p.amount)||0:Number(p.netAmount)||0,ecg_deduction:Number(p.ecgDeduction)||0,ecg_updated_at:p.ecgUpdatedAt||null,updated_at:p.updatedAt||stamp}));
+    const payRes=paymentRows.length?await supabaseClient.from('payments').upsert(paymentRows,{onConflict:'id'}):{error:null};if(payRes.error)throw payRes.error;
+    const ecgRows=data.ecgBills.map(e=>({id:e.cloudId,owner_id:cloudUser.id,tenant_id:tenantCloudId(e.tenantId),payment_id:data.payments.find(p=>p.id===e.paymentId)?.cloudId,amount:Number(e.ecgDeduction)||0,currency:tenant(e.tenantId)?.currency||'GHS',total_before:Number(e.totalAmount)||0,new_total:Number(e.newTotal)||0,months_left:Number(e.monthsLeft)||0,days_left:Number(e.daysLeft)||0,deducted_at:e.date?new Date(e.date+'T00:00:00').toISOString():stamp,note:e.note||null,created_at:e.createdAt||stamp})).filter(e=>e.payment_id);
+    const ecgRes=ecgRows.length?await supabaseClient.from('ecg_deductions').upsert(ecgRows,{onConflict:'id'}):{error:null};if(ecgRes.error)throw ecgRes.error;
+    const s=await supabaseClient.from('app_settings').upsert({owner_id:cloudUser.id,property_name:'Mad Juliana’s Tenants Payment',landlady_name:'Juliana Aida Antwi',updated_at:stamp},{onConflict:'owner_id'});if(s.error)throw s.error;
+    cloudStatus('Connected');
+  }catch(e){console.error(e);cloudStatus('Offline')}finally{cloudSyncBusy=false}
+}
+async function pullCloudState(){
+  if(!cloudUser||!supabaseClient)return;cloudStatus('Syncing…');
+  try{
+    const [tr,pr,er]=await Promise.all([supabaseClient.from('tenants').select('*').order('created_at'),supabaseClient.from('payments').select('*').order('payment_date'),supabaseClient.from('ecg_deductions').select('*').order('deducted_at')]);
+    if(tr.error)throw tr.error;if(pr.error)throw pr.error;if(er.error)throw er.error;
+    const rows=tr.data||[], pays=pr.data||[], ecgs=er.data||[];
+    const cloudLatest=Math.max(0,...rows.map(r=>Date.parse(r.updated_at||r.created_at||'')||0),...pays.map(r=>Date.parse(r.updated_at||r.created_at||'')||0),...ecgs.map(r=>Date.parse(r.deducted_at||r.created_at||'')||0));
+    const localLatest=Date.parse(data.updatedAt||'')||0;
+    if(localLatest>cloudLatest+250){await syncToCloud();return}
+    if(!rows.length&&!pays.length&&!ecgs.length){await syncToCloud();return}
+    const old=clone(data);const byCloud=new Map(data.tenants.map(t=>[t.cloudId,t]));rows.forEach(r=>{let t=byCloud.get(r.id);if(!t){t={id:'t-'+r.id.slice(0,8),cloudId:r.id,name:r.name,currency:r.currency||'GHS',rate:Number(r.monthly_rate)||0,phone:r.phone||'',start:r.start_date||'',end:r.paid_to||'',notes:r.notes||''};data.tenants.push(t)}Object.assign(t,{name:r.name,phone:r.phone||'',currency:r.currency||'GHS',rate:Number(r.monthly_rate)||0,start:r.start_date||'',end:r.paid_to||'',notes:r.notes||'',updatedAt:r.updated_at||r.created_at||''})});
+    const tenantByCloud=new Map(data.tenants.map(t=>[t.cloudId,t.id]));const payByCloud=new Map(data.payments.map(p=>[p.cloudId,p]));
+    pays.forEach(r=>{let p=payByCloud.get(r.id);if(!p){p={id:'p-'+r.id.slice(0,8),cloudId:r.id,tenantId:tenantByCloud.get(r.tenant_id),amount:Number(r.amount)||0,currency:r.currency||'GHS'};data.payments.push(p)}Object.assign(p,{tenantId:tenantByCloud.get(r.tenant_id)||p.tenantId,amount:Number(r.amount)||0,currency:r.currency||'GHS',monthlyRate:Number(r.monthly_rate)||0,start:r.start_date||'',end:r.end_date||'',months:Number(r.months)||0,days:Number(r.days)||0,date:(r.payment_date||'').slice(0,10)||iso(today),note:r.note||'',netAmount:r.net_amount==null?Number(r.amount)||0:Number(r.net_amount)||0,ecgDeduction:Number(r.ecg_deduction)||0,ecgUpdatedAt:r.ecg_updated_at||null,updatedAt:r.updated_at||r.created_at||''})});
+    const remotePaymentIds=new Set(pays.map(r=>r.id));data.payments=data.payments.filter(p=>!p.cloudId||remotePaymentIds.has(p.cloudId));
+    const ecgByCloud=new Map(data.ecgBills.map(e=>[e.cloudId,e]));ecgs.forEach(r=>{const p=data.payments.find(x=>x.cloudId===r.payment_id);if(!p)return;let e=ecgByCloud.get(r.id);if(!e){e={id:'e-'+r.id.slice(0,8),cloudId:r.id,tenantId:tenantByCloud.get(r.tenant_id),paymentId:p.id};data.ecgBills.push(e)}Object.assign(e,{tenantId:tenantByCloud.get(r.tenant_id)||e.tenantId,paymentId:p.id,totalAmount:Number(r.total_before)||0,ecgDeduction:Number(r.amount)||0,newTotal:Number(r.new_total)||0,monthsLeft:Number(r.months_left)||0,daysLeft:Number(r.days_left)||0,date:(r.deducted_at||'').slice(0,10)||iso(today),note:r.note||'',updatedAt:r.created_at||r.deducted_at||''})});
+    const remoteEcgIds=new Set(ecgs.map(r=>r.id));data.ecgBills=data.ecgBills.filter(e=>!e.cloudId||remoteEcgIds.has(e.cloudId));
+    const remoteTenantIds=new Set(rows.map(r=>r.id));data.tenants=data.tenants.filter(t=>!t.cloudId||remoteTenantIds.has(t.cloudId));
+    data.tenants.forEach(t=>{const ps=data.payments.filter(p=>p.tenantId===t.id).sort((a,b)=>(a.end||'').localeCompare(b.end||''));if(ps.length)t.end=ps[ps.length-1].end||t.end});
+    applyingCloud=true;save();applyingCloud=false;render();cloudStatus('Connected');return old;
+  }catch(e){console.error(e);cloudStatus('Offline')}
+}
+
+async function cloudAuth(mode){if(!supabaseClient)return toast('Cloud service is not available');const email=$('cloudEmail')?.value.trim(),password=$('cloudPassword')?.value;if(!email||password.length<6)return toast('Enter an email and a password of at least 6 characters');cloudStatus('Connecting…');try{let res;if(mode==='signup')res=await supabaseClient.auth.signUp({email,password});else res=await supabaseClient.auth.signInWithPassword({email,password});if(res.error)throw res.error;if(res.data.user){cloudSetSignedIn(res.data.user);setupCloudRealtime();ensureCloudIds();await pullCloudState();await syncToCloud();toast(mode==='signup'?'Account created. Cloud sync is on.':'Cloud sync connected.')}else toast('Check your email to confirm the account, then sign in.')}catch(e){cloudStatus('Offline');toast(e.message||'Could not connect to cloud')}}
+function setupCloudRealtime(){if(!supabaseClient||!cloudUser)return;if(cloudChannel)supabaseClient.removeChannel(cloudChannel);cloudChannel=supabaseClient.channel('mad-juliana-live').on('postgres_changes',{event:'*',schema:'public',table:'tenants',filter:`owner_id=eq.${cloudUser.id}`},()=>pullCloudState()).on('postgres_changes',{event:'*',schema:'public',table:'payments',filter:`owner_id=eq.${cloudUser.id}`},()=>pullCloudState()).on('postgres_changes',{event:'*',schema:'public',table:'ecg_deductions',filter:`owner_id=eq.${cloudUser.id}`},()=>pullCloudState()).subscribe();}
+async function initCloud(){try{if(!window.supabase?.createClient)return;supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);supabaseClient.auth.onAuthStateChange((event,session)=>{cloudSetSignedIn(session?.user||null);if(session?.user&&event!=='SIGNED_OUT'){setupCloudRealtime();pullCloudState()}else if(event==='SIGNED_OUT'&&cloudChannel){supabaseClient.removeChannel(cloudChannel);cloudChannel=null}});const {data:{session}}=await supabaseClient.auth.getSession();cloudSetSignedIn(session?.user||null);if(session?.user){setupCloudRealtime();await pullCloudState();}document.body.dataset.cloudReady='1'}catch(e){console.error(e)}}
+$('cloudSignInBtn')?.addEventListener('click',()=>cloudAuth('signin'));$('cloudSignUpBtn')?.addEventListener('click',()=>cloudAuth('signup'));$('cloudSyncNowBtn')?.addEventListener('click',()=>syncToCloud());$('cloudSignOutBtn')?.addEventListener('click',async()=>{if(supabaseClient)await supabaseClient.auth.signOut();cloudSetSignedIn(null);toast('Cloud sync signed out')});
+initCloud();
+
 async function shareReceiptImage(){
   if(!lastReceipt){toast('No receipt available yet');return false}
   try{
@@ -212,28 +277,41 @@ function ecgStateForTenant(t,bill){
   const coverage=customCoverage(start,newTotal,t.rate);
   return {p,gross,already,available,deduction,newTotal,start,coverage};
 }
+function updateEcgClearButton(){
+  const t=tenant(selectedTenant),p=t?latestPayment(t.id):null;
+  const btn=$('clearEcgBtn');
+  if(btn)btn.disabled=!(p&&Number(p.ecgDeduction)>0);
+}
 function renderEcgPreview(){
   const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);const state=t?ecgStateForTenant(t,bill):null;
+  updateEcgClearButton();
   if(!state||bill<=0){$('ecgPreview').innerHTML='<span>NEW TOTAL</span><b>Enter the ECG bill amount</b><small>Type a bill amount to see the rent value and remaining coverage update live.</small>';return}
   const {available,newTotal,coverage}=state;
   const label=coverageLabel(coverage.months,coverage.days);
   $('ecgPreview').innerHTML=`<div class="ecg-live-grid"><div><span>TOTAL</span><b>${money(available,t.currency)}</b></div><div><span>ECG BILL</span><b>${money(bill,t.currency)}</b></div><div><span>NEW TOTAL</span><b>${money(newTotal,t.currency)}</b></div><div><span>MONTHS LEFT</span><b>${esc(label)}</b></div></div><small>Paid to after deduction · ${fmtDate(coverage.end)}</small>`;
 }
-function openEcgSheet(id){selectedTenant=id||selectedTenant;const t=tenant(selectedTenant);if(!t)return;const p=latestPayment(t.id);$('ecgTenant').textContent=t.name;$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgRate').textContent=money(t.rate,t.currency)+'/month';$('ecgAmount').value='';$('ecgPreview').innerHTML=p?'<span>NEW TOTAL</span><b>Enter the ECG bill amount</b><small>Type a bill amount to see the rent value and remaining coverage update live.</small>':'<span>NO PAYMENT</span><b>There is no payment to deduct from yet.</b><small>Record a payment for this tenant first.</small>';openSheet('ecgSheet')}
+function openEcgSheet(id){selectedTenant=id||selectedTenant;const t=tenant(selectedTenant);if(!t)return;const p=latestPayment(t.id);$('ecgTenant').textContent=t.name;$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgRate').textContent=money(t.rate,t.currency)+'/month';$('ecgAmount').value='';$('ecgPreview').innerHTML=p?'<span>NEW TOTAL</span><b>Enter the ECG bill amount</b><small>Type a bill amount to see the rent value and remaining coverage update live.</small>':'<span>NO PAYMENT</span><b>There is no payment to deduct from yet.</b><small>Record a payment for this tenant first.</small>';updateEcgClearButton();openSheet('ecgSheet')}
 $('ecgAmount').oninput=renderEcgPreview;
-$('ecgForm').onsubmit=ev=>{ev.preventDefault();const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);const state=t?ecgStateForTenant(t,bill):null;if(!t||!state||bill<=0){toast('Enter an ECG bill amount');return}if(!(state.available>0)){toast('There is no remaining rent value available to deduct from');return}if(bill>state.available){toast(`ECG bill cannot exceed ${money(state.available,t.currency)}`);return}const {p,gross,newTotal,start,coverage}=state;const old=clone(data);const originalEnd=p.end;const totalEcg=Number(p.ecgDeduction||0)+bill;p.ecgDeduction=totalEcg;p.netAmount=newTotal;p.months=coverage.months;p.days=coverage.days;p.end=coverage.end;p.ecgUpdatedAt=new Date().toISOString();t.end=coverage.end;const billRec={id:'e-'+Date.now(),tenantId:t.id,paymentId:p.id,totalAmount:state.available,ecgDeduction:bill,newTotal,monthsLeft:coverage.months,daysLeft:coverage.days,originalStart:start,originalEnd,newEnd:coverage.end,date:iso(today)};data.ecgBills.push(billRec);const label=coverageLabel(coverage.months,coverage.days);const ok=window.confirm(`${t.name}
+$('clearEcgBtn').onclick=()=>{
+  const t=tenant(selectedTenant),p=t?latestPayment(t.id):null;if(!t||!p||!(Number(p.ecgDeduction)>0)){toast('There is no ECG deduction to clear');return}
+  const old=clone(data);const original=customCoverage(p.start||t.start,Number(p.amount)||0,t.rate);const cleared=Number(p.ecgDeduction)||0;
+  p.ecgDeduction=0;p.netAmount=Number(p.amount)||0;p.months=original.months;p.days=original.days;p.end=original.end;p.ecgUpdatedAt=null;t.end=original.end;data.ecgBills=data.ecgBills.filter(e=>e.paymentId!==p.id);
+  const ok=window.confirm(`Clear ECG bill ${money(cleared,t.currency)} for ${t.name}?\n\nThis restores the payment to ${money(p.amount,t.currency)} and Paid to ${fmtDate(original.end)}.`);
+  if(!ok){data=old;return}
+  save();render();$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgAmount').value='';renderEcgPreview();toastAction(`${t.name}: ECG bill cleared`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000);
+};
+$('ecgForm').onsubmit=ev=>{ev.preventDefault();const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);const state=t?ecgStateForTenant(t,bill):null;if(!t||!state||bill<=0){toast('Enter an ECG bill amount');return}if(!(state.available>0)){toast('There is no remaining rent value available to deduct from');return}if(bill>state.available){toast(`ECG bill cannot exceed ${money(state.available,t.currency)}`);return}const {p,newTotal,start,coverage}=state;const old=clone(data);const originalEnd=p.end;const totalEcg=Number(p.ecgDeduction||0)+bill;p.ecgDeduction=totalEcg;p.netAmount=newTotal;p.months=coverage.months;p.days=coverage.days;p.end=coverage.end;p.ecgUpdatedAt=new Date().toISOString();t.end=coverage.end;const billRec={id:'e-'+Date.now(),tenantId:t.id,paymentId:p.id,totalAmount:state.available,ecgDeduction:bill,newTotal,monthsLeft:coverage.months,daysLeft:coverage.days,originalStart:start,originalEnd:originalEnd,newEnd:coverage.end,date:iso(today)};data.ecgBills.push(billRec);const label=coverageLabel(coverage.months,coverage.days);const ok=window.confirm(`${t.name}\n\nTotal ${money(state.available,t.currency)}\nECG Bill ${money(bill,t.currency)}\nNew Total ${money(newTotal,t.currency)}\nMonths left ${label}\nPaid to ${fmtDate(coverage.end)}\n\nRecord this ECG bill?`);if(!ok){data=old;return}save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ECG ${money(bill,t.currency)} deducted · ${label} left`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
 
-Total ${money(state.available,t.currency)}
-ECG Bill ${money(bill,t.currency)}
-New Total ${money(newTotal,t.currency)}
-Months left ${label}
-Paid to ${fmtDate(coverage.end)}
-
-Record this ECG bill?`);if(!ok){data=old;return}save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ECG ${money(bill,t.currency)} deducted · ${label} left`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
+function deleteTenant(id){
+  const t=tenant(id);if(!t)return;
+  const ok=window.confirm(`Delete ${t.name}?\n\nThis will remove the tenant, their payment history, and ECG records. This cannot be undone except with the Undo button immediately after deletion.`);
+  if(!ok)return;
+  const old=clone(data);data.tenants=data.tenants.filter(x=>x.id!==id);data.payments=data.payments.filter(p=>p.tenantId!==id);data.ecgBills=data.ecgBills.filter(e=>e.tenantId!==id);if(selectedTenant===id){selectedTenant=null;closeSheets()}save();render();toastAction(`${t.name} deleted`,'Undo',()=>{data=old;save();render()},6000);
+}
 
 function openTenantSheet(id){const t=id?tenant(id):null;$('tenantId').value=t?.id||'';$('tenantSheetTitle').textContent=t?'Edit tenant':'Add tenant';$('tenantName').value=t?.name||'';$('tenantRate').value=t?.rate??'';$('tenantCurrency').value=t?.currency||'GHS';$('tenantPhone').value=t?.phone||'';$('tenantStart').value=t?.start||iso(today);$('tenantEnd').value=t?.end||addMonths(iso(today),12);openSheet('tenantSheet')}
 $('addTenantBtn').onclick=()=>openTenantSheet();
-$('tenantForm').onsubmit=e=>{e.preventDefault();const id=$('tenantId').value;const payload={name:$('tenantName').value.trim(),rate:Number($('tenantRate').value),currency:$('tenantCurrency').value,phone:$('tenantPhone').value.trim(),start:$('tenantStart').value,end:$('tenantEnd').value};if(!payload.name||payload.rate<0)return;const old=clone(data);if(id)Object.assign(tenant(id),payload);else data.tenants.push({id:'t-'+Date.now(),...payload});save();closeSheets();render();toastAction(id?'Tenant updated':'Tenant added','Undo',()=>{data=old;save();render()},4000)};
+$('tenantForm').onsubmit=e=>{e.preventDefault();const id=$('tenantId').value;const payload={name:$('tenantName').value.trim(),rate:Number($('tenantRate').value),currency:$('tenantCurrency').value,phone:$('tenantPhone').value.trim(),start:$('tenantStart').value,end:$('tenantEnd').value};if(!payload.name||payload.rate<0)return;const old=clone(data);if(id)Object.assign(tenant(id),payload);else data.tenants.push({id:'t-'+Date.now(),...payload});save();render();closeSheets();toastAction(id?'Tenant updated':'Tenant added','Undo',()=>{data=old;save();render()},4000)};
 
 function openSheet(id){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open'));$(id).classList.add('open');$(id).setAttribute('aria-hidden','false');$('backdrop').classList.add('open')}
 function closeSheets(){document.querySelectorAll('.sheet').forEach(s=>{s.classList.remove('open');s.setAttribute('aria-hidden','true')});$('backdrop').classList.remove('open')}

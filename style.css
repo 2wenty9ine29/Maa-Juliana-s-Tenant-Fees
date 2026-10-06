@@ -66,3 +66,15 @@ h1{font-size:53px!important;line-height:.98!important}
 
 /* v2.3.6 ECG live consistency */
 .coverage-card{grid-template-columns:1fr 1fr;gap:14px 12px}.coverage-card>div:nth-child(3),.coverage-card>div:nth-child(4){border-top:1px solid rgba(255,255,255,.12);padding-top:12px}.coverage-full{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.12);padding-top:12px}.ecg-live-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}.ecg-live-grid>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.ecg-live-grid span{display:block;font-size:9px;letter-spacing:.1em;color:#999;font-weight:700}.ecg-live-grid b{display:block;font-size:13px;margin-top:4px}.ecg-preview>small{display:block;margin-top:7px}
+
+.cloud-card input{display:block;width:100%;height:44px;margin-top:8px;border:1px solid var(--line);background:#fdfbf8;border-radius:12px;padding:0 12px;outline:none}.cloud-card input:focus{border-color:#b9b0a5;box-shadow:0 0 0 3px rgba(32,32,30,.05)}.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.cloud-actions .settings-btn{margin-top:0}.cloud-user{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:10px 12px;border-radius:12px;background:#f1ece5}.cloud-user b{font-size:12px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cloud-user span{font-size:10px!important;color:var(--green)!important;white-space:nowrap}.cloud-card [hidden]{display:none!important}
+
+/* v2.3.5.29 tenant deletion + ECG clearing */
+.person-swipe{position:relative;overflow:hidden;border-radius:19px;touch-action:pan-y}
+.person-swipe .person-row{position:relative;z-index:2;transition:transform .2s ease;will-change:transform}
+.person-swipe.open .person-row{transform:translateX(-88px)}
+.person-swipe.swiping .person-row{transition:none}
+.swipe-delete{position:absolute;z-index:1;right:0;top:0;bottom:0;width:88px;border:0;background:#a34d43;color:#fff;font-size:12px;font-weight:700}
+.clear-ecg-btn{color:#a34d43;background:#f3e6e3}
+.clear-ecg-btn:disabled{opacity:.45;color:#777;background:#eae5dd}
+@media(prefers-reduced-motion:reduce){.person-swipe .person-row{transition:none}}

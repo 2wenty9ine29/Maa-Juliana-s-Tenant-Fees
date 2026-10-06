@@ -32,3 +32,18 @@ The app keeps tenant and payment records in browser localStorage and a second In
 
 ### ECG bill deduction (v2.2.3.29)
 When recording a payment, an optional ECG bill deduction can be entered. The app subtracts the ECG amount from the rent value before calculating coverage, so a GHS 960 payment at GHS 160/month with a GHS 320 ECG deduction covers 4 months. ECG deduction details appear on the tenancy-agreement receipt only when a deduction was entered.
+
+
+## v2.3.5.29 Cloud Sync
+- Optional Supabase owner account using email/password.
+- Local-first operation is preserved; cloud sync activates after sign-in.
+- Tenant, payment, ECG deduction, and property data are synchronized through Supabase Postgres with Row Level Security.
+- Realtime database changes are subscribed to so other open copies can refresh automatically.
+- The browser uses only the Supabase publishable key; no service-role key is included in the app.
+- Existing local records are uploaded when connecting to an empty cloud account.
+
+## v2.3.5.29 fixes
+- Newly added tenant details now remain visible without requiring a refresh, including monthly rate, when cloud sync is enabled.
+- ECG sheet includes a Clear ECG bill action that restores the payment's original rent coverage.
+- Swipe left on a tenant in People to reveal Delete; deletion asks for confirmation and provides Undo.
+- Cloud deletion propagation keeps connected browsers consistent after a tenant is deleted.
