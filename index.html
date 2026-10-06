@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="manifest" href="manifest.webmanifest?v=531" />
-  <link rel="stylesheet" href="style.css?v=531" />
+  <link rel="manifest" href="manifest.webmanifest?v=532" />
+  <link rel="stylesheet" href="style.css?v=532" />
   <title>Mad Juliana’s Tenants Payment</title>
 </head>
 <body>
@@ -47,7 +47,7 @@
           <button class="action-card" data-view="payments"><span class="action-icon">₵</span><span><b>Payments</b><small>Record & view payment history</small></span><i>→</i></button>
           <button class="action-card" data-view="reminders"><span class="action-icon">◷</span><span><b>Reminders</b><small>See who is ending soon</small></span><i>→</i></button>
         </div>
-        <div class="home-version">v2.3.5.31</div>
+        <div class="home-version">v2.3.5.32</div>
       </section>
 
       <section class="view" id="peopleView">
@@ -86,7 +86,7 @@
           </div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.3.5.31</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.3.5.32</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
@@ -99,7 +99,7 @@
             <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.3.5.31</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.3.5.32</strong></div>
           <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
@@ -126,6 +126,8 @@
       <div class="two-col"><label>Monthly rate<input id="tenantRate" required type="number" min="0" step="0.01" inputmode="decimal"></label><label>Currency<select id="tenantCurrency"><option value="GHS">GHS</option><option value="USD">USD</option></select></label></div>
       <label>Phone number <small>optional for now</small><input id="tenantPhone" type="tel" placeholder="024…"></label>
       <div class="two-col"><label>Start period<input id="tenantStart" type="date" required></label><label>Paid to<input id="tenantEnd" type="date" required></label></div>
+      <label id="tenantAmountRow">Amount paid <small>optional · works out “Paid to” for you</small><input id="tenantAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 1920"></label>
+      <div class="custom-helper" id="tenantCoverageHint" hidden></div>
       <button class="primary-btn" type="submit">Save tenant</button>
     </form>
   </section>
@@ -161,6 +163,7 @@
     <div class="ecg-meta"><div><span>Tenant</span><b id="ecgTenant"></b></div><div><span>Current paid to</span><b id="ecgCurrentPaidTo"></b></div><div><span>Monthly rate</span><b id="ecgRate"></b></div></div>
     <form id="ecgForm">
       <label>ECG bill amount<input id="ecgAmount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="e.g. 320"></label>
+      <div class="two-col" id="ecgFxRow" hidden><label>Bill is in<select id="ecgBillCurrency"><option value="GHS">GHS (cedis)</option><option value="USD">USD</option></select></label><label id="ecgFxLabel">Rate · GHS per $1<input id="ecgFxRate" type="number" min="0.0001" step="0.0001" inputmode="decimal" placeholder="e.g. 15.5"></label></div>
       <div class="period-preview ecg-preview" id="ecgPreview">Enter the ECG bill amount.</div>
       <button class="primary-btn" type="submit">Deduct ECG bill</button>
       <button class="secondary-btn clear-ecg-btn" id="clearEcgBtn" type="button">Clear ECG bill</button>
@@ -176,6 +179,6 @@
 
   <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=531"></script>
+  <script src="app.js?v=532"></script>
 </body>
 </html>
