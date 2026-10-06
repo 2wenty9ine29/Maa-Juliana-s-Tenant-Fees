@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="manifest" href="manifest.webmanifest?v=319" />
-  <link rel="stylesheet" href="style.css?v=319" />
+  <link rel="manifest" href="manifest.webmanifest?v=318" />
+  <link rel="stylesheet" href="style.css?v=318" />
   <title>Mad Juliana’s Tenants Payment</title>
 </head>
 <body>
@@ -63,7 +63,7 @@
 
       <section class="view" id="paymentsView">
         <div class="page-heading"><div><span class="eyebrow">MONEY IN</span><h2>Payments</h2></div><button class="pill-btn" id="newPaymentBtn">+ Payment</button></div>
-        <div class="payment-summary"><div><span>Total recorded</span><strong id="paymentTotal">GHS 0</strong></div><div><span>Records</span><strong id="paymentRecordCount">0</strong></div></div>
+        <div class="payment-summary"><div><span>Total recorded</span><strong id="paymentTotal"><span class="payment-total-line">GHS 0.00</span><span class="payment-total-line">USD $0.00</span></strong></div><div><span>Records</span><strong id="paymentRecordCount">0</strong></div></div>
         <div class="payments-list" id="paymentsList"></div>
       </section>
 
@@ -80,7 +80,7 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.9</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.1.7</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
@@ -93,7 +93,7 @@
             <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.1.9</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.1.7</strong></div>
           <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
@@ -157,6 +157,6 @@
   </section>
 
   <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
-  <script src="app.js?v=316"></script>
+  <script src="app.js?v=318"></script>
 </body>
 </html>
