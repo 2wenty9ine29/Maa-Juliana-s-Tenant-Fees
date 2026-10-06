@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.5.30';
+const APP_VERSION='2.3.5.31';
 const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
 let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
@@ -180,7 +180,7 @@ function formatCalculationNote(note){
 }
 function makeReceipt(t,p){
   const hasEcg=Number(p.ecgDeduction)>0 || p.type==='ecg';
-  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=hasEcg?1180:1120;const c=canvas.getContext('2d');
+  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=hasEcg?1122:1120;const c=canvas.getContext('2d');
   const receiptTenantName=String(t.name||'').replace(/\s*\([^)]*\)/g,'').trim();
   c.fillStyle='#fff';c.fillRect(0,0,1000,canvas.height);c.fillStyle='#111';c.textAlign='center';c.font='700 42px Georgia';c.fillText('TENANCY AGREEMENT',500,72);c.fillRect(385,86,230,3);
   const calc=formatCalculationNote(p.note);let y=135;if(calc){c.font='700 25px Georgia';c.fillText(calc,500,y);y+=58}
@@ -190,13 +190,12 @@ function makeReceipt(t,p){
     rows.push(['TOTAL',money(p.amount,p.currency)]);
     rows.push(['ECG BILL',money(p.ecgDeduction,p.currency)]);
     rows.push(['NEW TOTAL',money(p.netAmount??p.amount,p.currency)]);
-    rows.push(['MONTHS LEFT',coverageLabel(Number(p.months)||0,Number(p.days)||0)]);
   }else{
     rows.push(['AMOUNT',money(p.netAmount??p.amount,p.currency)]);
   }
   c.textAlign='left';rows.forEach(([a,b])=>{c.font='700 25px Georgia';c.fillText(a,100,y);c.textAlign='center';c.font='400 25px Georgia';c.fillText(b,650,y);c.textAlign='left';y+=58});
   y+=28;c.font='700 23px Georgia';c.fillText('Landlady:',100,y);c.fillText('Tenant:',600,y);y+=34;c.font='400 23px Georgia';c.fillText('Juliana Aida Antwi',100,y);c.fillText(receiptTenantName,600,y);y+=34;c.fillText('Signed',100,y);c.fillText('Signed',600,y);
-  c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`${p.type==='ecg'?'ECG bill date':'Payment date'}: ${fmtDate(p.date)}`,100,hasEcg?1120:1060);
+  c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`${p.type==='ecg'?'ECG bill date':'Payment date'}: ${fmtDate(p.date)}`,100,hasEcg?1062:1060);
   return canvas.toDataURL('image/png');
 }
 function makeEcgReceipt(t,e){const p=latestPayment(t.id);return p?makeReceipt(t,p):makeReceipt(t,{...e,type:'ecg',start:e.originalStart||t.start,end:e.newEnd||t.end,months:e.monthsLeft,days:e.daysLeft,amount:e.totalAmount,netAmount:e.newTotal,ecgDeduction:e.ecgDeduction})}

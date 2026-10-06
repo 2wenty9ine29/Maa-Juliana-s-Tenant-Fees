@@ -34,6 +34,10 @@ The app keeps tenant and payment records in browser localStorage and a second In
 When recording a payment, an optional ECG bill deduction can be entered. The app subtracts the ECG amount from the rent value before calculating coverage, so a GHS 960 payment at GHS 160/month with a GHS 320 ECG deduction covers 4 months. ECG deduction details appear on the tenancy-agreement receipt only when a deduction was entered.
 
 
+## v2.3.5.31 Receipts
+
+- Removed the "MONTHS LEFT" line from ECG receipts. Receipts never show months left.
+
 ## v2.3.5.30 Payments time-left
 
 - Payments list and resident detail now show how long each payment covered and how much time is left (e.g. "12 months paid · About 8 months left"), or "Completed" / "Starts in…" when applicable.
@@ -46,7 +50,7 @@ When recording a payment, an optional ECG bill deduction can be entered. The app
 - The browser uses only the Supabase publishable key; no service-role key is included in the app.
 - Existing local records are uploaded when connecting to an empty cloud account.
 
-## v2.3.5.30 fixes
+## v2.3.5.31 fixes
 - Newly added tenant details now remain visible without requiring a refresh, including monthly rate, when cloud sync is enabled.
 - ECG sheet includes a Clear ECG bill action that restores the payment's original rent coverage.
 - Swipe left on a tenant in People to reveal Delete; deletion asks for confirmation and provides Undo.
