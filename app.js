@@ -1,4 +1,4 @@
-const APP_VERSION='2.2.3.29';
+const APP_VERSION='2.3.4';
 const DB_NAME='mad-juliana-tenants-db';
 const DB_STORE='app';
 const DB_KEY='state';
@@ -32,6 +32,7 @@ const original={
   ]
 };
 let data=load();
+if(!Array.isArray(data.ecgBills)) data.ecgBills=[];
 function migrateV217(){
   let changed=false;
   const e=tenant('eudia'); if(e && e.name==='Eudia Agyei'){e.name='Eudia Agyei (Nurse)';changed=true}
@@ -126,20 +127,25 @@ function renderReminders(){
   const sorted=[...data.tenants].sort((a,b)=>a.end.localeCompare(b.end));
   $('remindersList').innerHTML=sorted.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);return `<div class="reminder-row"><div class="avatar small">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><strong>${esc(t.name)}</strong><span>Paid to ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span>${p?`<button class="reminder-print" type="button" data-receipt-tenant="${esc(t.id)}" aria-label="Open and share receipt for ${esc(t.name)}">Receipt</button>`:'<span class="no-receipt">No receipt</span>'}</div>`}).join('');
   document.querySelectorAll('[data-receipt-tenant]').forEach(b=>b.onclick=()=>openReceiptForTenant(b.dataset.receiptTenant,true));
+  const history=[...data.payments].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const el=$('reminderHistoryList');
+  if(el) el.innerHTML=history.map(p=>{const t=tenant(p.tenantId);if(!t)return '';return `<button class="history-row history-row-button" data-history-person="${esc(t.id)}"><div><b>${esc(t.name)}</b><span>${fmtDate(p.date)} · ${approximateCoverage(p)}${p.note?` · ${esc(p.note)}`:''}</span></div><strong>${money(p.amount,p.currency)}</strong></button>`}).join('')||'<div class="empty">No payment records.</div>';
+  document.querySelectorAll('[data-history-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.historyPerson));
 }
 $('peopleSearch').oninput=renderPeople;
 
-function openDetail(id){selectedTenant=id;const t=tenant(id);$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;const ps=data.payments.filter(p=>p.tenantId===id).sort((a,b)=>b.date.localeCompare(a.date));$('detailHistoryCount').textContent=ps.length+' record'+(ps.length===1?'':'s');$('detailHistory').innerHTML=ps.map(p=>`<div class="history-row"><div><b>${fmtDate(p.date)}</b><span>${fmtDate(p.start)} → ${fmtDate(p.end)}${p.months?` · ${p.months} month${p.months===1?'':'s'}${p.days?` + ${p.days} day${p.days===1?'':'s'}`:''}`:''}${p.note?` · ${esc(p.note)}`:''}</span></div><strong>${money(p.amount,p.currency)}</strong></div>`).join('')||'<div class="empty">No payment records.</div>';openSheet('tenantDetailSheet')}
+function openDetail(id){selectedTenant=id;const t=tenant(id);$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
 $('extendBtn').onclick=()=>{closeSheets();openPaymentSheet(selectedTenant)};
+$('ecgBillBtn').onclick=()=>{closeSheets();openEcgSheet(selectedTenant)};
 $('detailReceiptBtn').onclick=()=>openReceiptForTenant(selectedTenant,true);
 $('editTenantBtn').onclick=()=>{closeSheets();openTenantSheet(selectedTenant)};
 
 function populatePaymentTenants(){const el=$('paymentTenant');const current=el.value;el.innerHTML=data.tenants.map(t=>`<option value="${t.id}">${esc(t.name)} · ${money(t.rate,t.currency)}/mo</option>`).join('');if(selectedTenant&&tenant(selectedTenant))el.value=selectedTenant;else if(current&&tenant(current))el.value=current;updatePaymentPreview()}
-function openPaymentSheet(id){selectedTenant=id||selectedTenant;populatePaymentTenants();$('paymentTenant').value=selectedTenant||data.tenants[0]?.id||'';$('paymentDate').value=iso(today);$('paymentMonths').value=6;$('paymentNote').value='';$('ecgDeduction').value='';setDuration('6');openSheet('paymentSheet')}
+function openPaymentSheet(id){selectedTenant=id||selectedTenant;populatePaymentTenants();$('paymentTenant').value=selectedTenant||data.tenants[0]?.id||'';$('paymentDate').value=iso(today);$('paymentMonths').value=6;$('paymentNote').value='';setDuration('6');openSheet('paymentSheet')}
 function setDuration(v){document.querySelectorAll('[data-duration]').forEach(b=>b.classList.toggle('selected',b.dataset.duration===String(v)));const custom=v==='custom';$('paymentMonths').readOnly=true;$('customHelper').hidden=!custom;const t=tenant($('paymentTenant').value);if(!custom&&t){$('paymentMonths').value=Number(v);$('paymentAmount').value=(t.rate*Number(v)).toFixed(2)}else if(t&&custom){$('paymentAmount').value='';$('paymentMonths').value='';}updatePaymentPreview()}
 document.querySelectorAll('[data-duration]').forEach(b=>b.onclick=()=>setDuration(b.dataset.duration));
-$('paymentTenant').onchange=()=>{const t=tenant($('paymentTenant').value);const custom=document.querySelector('[data-duration].selected')?.dataset.duration==='custom';if(t&&!custom)$('paymentAmount').value=(t.rate*Number($('paymentMonths').value||6)).toFixed(2);updatePaymentPreview()};$('paymentMonths').oninput=updatePaymentPreview;$('paymentAmount').oninput=updatePaymentPreview;$('ecgDeduction').oninput=updatePaymentPreview;
-function updatePaymentPreview(){const t=tenant($('paymentTenant').value);if(!t){$('periodPreview').textContent='';return}const amount=Number($('paymentAmount').value||0);const ecgDeduction=Number($('ecgDeduction').value||0);const netAmount=Math.max(0,amount-ecgDeduction);const start=t.end;let months=0,days=0,end=start;if(netAmount>0){const x=customCoverage(start,netAmount,t.rate);months=x.months;days=x.days;end=x.end;$('paymentMonths').value=months||'';}const label=netAmount>0?coverageLabel(months,days):'Enter amount';const deduction=ecgDeduction>0?`<small>ECG deducted · ${money(ecgDeduction,t.currency)} · rent value ${money(netAmount,t.currency)}</small>`:'';$('periodPreview').innerHTML=`<span>PAYMENT COVERS</span><b>${fmtDate(start)} → ${fmtDate(end)}</b><small>${label} · ${money(netAmount,t.currency)}${amount>0&&ecgDeduction>0?` from ${money(amount,t.currency)}`:''}</small>${deduction}`}
+$('paymentTenant').onchange=()=>{const t=tenant($('paymentTenant').value);const custom=document.querySelector('[data-duration].selected')?.dataset.duration==='custom';if(t&&!custom)$('paymentAmount').value=(t.rate*Number($('paymentMonths').value||6)).toFixed(2);updatePaymentPreview()};$('paymentMonths').oninput=updatePaymentPreview;$('paymentAmount').oninput=updatePaymentPreview;
+function updatePaymentPreview(){const t=tenant($('paymentTenant').value);if(!t){$('periodPreview').textContent='';return}const amount=Number($('paymentAmount').value||0);const start=t.end;let months=0,days=0,end=start;if(amount>0){const x=customCoverage(start,amount,t.rate);months=x.months;days=x.days;end=x.end;$('paymentMonths').value=months||'';}const label=amount>0?coverageLabel(months,days):'Enter amount';$('periodPreview').innerHTML=`<span>PAYMENT COVERS</span><b>${fmtDate(start)} → ${fmtDate(end)}</b><small>${label} · ${money(amount,t.currency)}</small>`}
 function formatCalculationNote(note){
   const raw=String(note||'');
   const m=raw.match(/(?:GH¢|GHS|USD|\$)\s*([\d,]+(?:\.\d+)?)\s*[−–-]\s*(?:GH¢|GHS|USD|\$)\s*([\d,]+(?:\.\d+)?)\s*(?:=\s*(?:GH¢|GHS|USD|\$)\s*([\d,]+(?:\.\d+)?))?/i);
@@ -148,19 +154,28 @@ function formatCalculationNote(note){
   return `GH¢  ${a}- GHS ${b} = GH¢  ${c}`;
 }
 function makeReceipt(t,p){
-  const hasEcg=Number(p.ecgDeduction)>0;
-  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=hasEcg?1240:1120;const c=canvas.getContext('2d');
+  const hasEcg=Number(p.ecgDeduction)>0 || p.type==='ecg';
+  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=hasEcg?1180:1120;const c=canvas.getContext('2d');
   const receiptTenantName=String(t.name||'').replace(/\s*\([^)]*\)/g,'').trim();
   c.fillStyle='#fff';c.fillRect(0,0,1000,canvas.height);c.fillStyle='#111';c.textAlign='center';c.font='700 42px Georgia';c.fillText('TENANCY AGREEMENT',500,72);c.fillRect(385,86,230,3);
   const calc=formatCalculationNote(p.note);let y=135;if(calc){c.font='700 25px Georgia';c.fillText(calc,500,y);y+=58}
   const periodText=`${monthYear(p.start)} TO ${monthYear(p.end)}`;
-  const rows=[['LAND LADY','JULIANA AIDA ANTWI'],['TENANT',receiptTenantName.toUpperCase()],['PERIOD',periodText],['MONTHLY RATE',money(t.rate,t.currency)],['START PERIOD',monthYear(p.start)],['END PERIOD',monthYear(p.end)],['AMOUNT',money(p.netAmount??p.amount,p.currency)]];
-  if(hasEcg){rows.push(['ECG DEDUCTED',money(p.ecgDeduction,p.currency)]);rows.push(['MONTHS LEFT',`${Number(p.months)||0} month${Number(p.months)===1?'':'s'}`])}
+  const rows=[['LAND LADY','JULIANA AIDA ANTWI'],['TENANT',receiptTenantName.toUpperCase()],['PERIOD',periodText],['MONTHLY RATE',money(t.rate,t.currency)],['START PERIOD',monthYear(p.start)],['END PERIOD',monthYear(p.end)]];
+  if(p.type==='ecg'){
+    rows.push(['TOTAL',money(p.totalAmount,p.currency)]);
+    rows.push(['ECG BILL',money(p.ecgDeduction,p.currency)]);
+    rows.push(['NEW TOTAL',money(p.newTotal,p.currency)]);
+    rows.push(['MONTHS LEFT',`${Number(p.monthsLeft)||0} month${Number(p.monthsLeft)===1?'':'s'}`]);
+  }else{
+    rows.push(['AMOUNT',money(p.netAmount??p.amount,p.currency)]);
+    if(hasEcg){rows.push(['ECG DEDUCTED',money(p.ecgDeduction,p.currency)]);rows.push(['MONTHS LEFT',`${Number(p.months)||0} month${Number(p.months)===1?'':'s'}`])}
+  }
   c.textAlign='left';rows.forEach(([a,b])=>{c.font='700 25px Georgia';c.fillText(a,100,y);c.textAlign='center';c.font='400 25px Georgia';c.fillText(b,650,y);c.textAlign='left';y+=58});
   y+=28;c.font='700 23px Georgia';c.fillText('Landlady:',100,y);c.fillText('Tenant:',600,y);y+=34;c.font='400 23px Georgia';c.fillText('Juliana Aida Antwi',100,y);c.fillText(receiptTenantName,600,y);y+=34;c.fillText('Signed',100,y);c.fillText('Signed',600,y);
-  c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`Payment date: ${fmtDate(p.date)}`,100,hasEcg?1180:1060);
+  c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`${p.type==='ecg'?'ECG bill date':'Payment date'}: ${fmtDate(p.date)}`,100,hasEcg?1120:1060);
   return canvas.toDataURL('image/png');
 }
+function makeEcgReceipt(t,e){return makeReceipt(t,{...e,type:'ecg',start:e.originalStart||t.start,end:e.originalEnd||t.end,monthsLeft:e.monthsLeft})}
 function monthYear(s){return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
 function dataUrlToBlob(dataUrl){const [head,body]=String(dataUrl).split(',');const mime=(head.match(/data:([^;]+)/)||[])[1]||'image/png';const bin=atob(body);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new Blob([bytes],{type:mime})}
 async function shareReceiptImage(){
@@ -178,7 +193,26 @@ $('shareReceiptBtn').onclick=()=>shareReceiptImage();
 function downloadReceipt(){if(!lastReceipt)return;const a=document.createElement('a');a.href=lastReceipt;a.download='tenancy-agreement.png';document.body.appendChild(a);a.click();a.remove();}
 $('downloadReceiptBtn').onclick=downloadReceipt;
 
-$('paymentForm').onsubmit=e=>{e.preventDefault();const t=tenant($('paymentTenant').value);if(!t){toast('Choose a tenant first');return}const amount=Number($('paymentAmount').value);const ecgDeduction=Number($('ecgDeduction').value||0);if(!(amount>0)){toast('Enter a payment amount');return}if(ecgDeduction<0){toast('ECG deduction cannot be negative');return}if(ecgDeduction>=amount){toast('ECG deduction must be less than the payment amount');return}const netAmount=amount-ecgDeduction;const start=t.end;const calc=customCoverage(start,netAmount,t.rate);if(calc.months===0&&calc.days===0){toast('The payment left after ECG deduction is too small to cover any time');return}const label=receiptCoverageLabel({months:calc.months,days:calc.days});const ecgText=ecgDeduction>0?`\nECG deducted ${money(ecgDeduction,t.currency)}\nRent value ${money(netAmount,t.currency)}`:'';const ok=window.confirm(`${t.name}\n\nPayment ${money(amount,t.currency)}${ecgText}\nCovers ${label}\nPaid to ${fmtDate(calc.end)}\n\nRecord this payment?`);if(!ok)return;const old=clone(data);const p={id:'p-'+Date.now(),tenantId:t.id,amount,currency:t.currency,netAmount,ecgDeduction,months:calc.months,days:calc.days,start,end:calc.end,date:$('paymentDate').value||iso(today),note:$('paymentNote').value.trim()};data.payments.push(p);t.end=calc.end;save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ${money(amount,t.currency)} recorded${ecgDeduction>0?` · ECG ${money(ecgDeduction,t.currency)} deducted`:''} · ${label}`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
+$('paymentForm').onsubmit=e=>{e.preventDefault();const t=tenant($('paymentTenant').value);if(!t){toast('Choose a tenant first');return}const amount=Number($('paymentAmount').value);if(!(amount>0)){toast('Enter a payment amount');return}const start=t.end;const calc=customCoverage(start,amount,t.rate);if(calc.months===0&&calc.days===0){toast('The payment is too small to cover any time');return}const label=receiptCoverageLabel({months:calc.months,days:calc.days});const ok=window.confirm(`${t.name}
+
+Payment ${money(amount,t.currency)}
+Covers ${label}
+Paid to ${fmtDate(calc.end)}
+
+Record this payment?`);if(!ok)return;const old=clone(data);const p={id:'p-'+Date.now(),tenantId:t.id,amount,currency:t.currency,netAmount:amount,months:calc.months,days:calc.days,start,end:calc.end,date:$('paymentDate').value||iso(today),note:$('paymentNote').value.trim()};data.payments.push(p);t.end=calc.end;save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ${money(amount,t.currency)} recorded · ${label}`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
+
+function openEcgSheet(id){selectedTenant=id||selectedTenant;const t=tenant(selectedTenant);if(!t)return;$('ecgTenant').textContent=t.name;$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgRate').textContent=money(t.rate,t.currency)+'/month';$('ecgAmount').value='';$('ecgPreview').textContent='Enter the ECG bill amount.';openSheet('ecgSheet')}
+$('ecgAmount').oninput=()=>{const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);if(!t||bill<=0){$('ecgPreview').textContent='Enter the ECG bill amount.';return}const latest=latestPayment(t.id);const priorEcg=latest?data.ecgBills.filter(x=>x.paymentId===latest.id).reduce((sum,x)=>sum+(Number(x.ecgDeduction)||0),0):0;const total=Math.max(0,Number(latest?.netAmount??latest?.amount??0)-priorEcg);const newTotal=Math.max(0,total-bill);const monthsLeft=Math.max(0,Math.floor(newTotal/(Number(t.rate)||1)+1e-9));const originalStart=latest?.start||t.start;const originalEnd=latest?.end||t.end;$('ecgPreview').innerHTML=`<span>TOTAL</span><b>${money(total,t.currency)}</b><small>ECG bill · ${money(bill,t.currency)} · New total ${money(newTotal,t.currency)} · ${monthsLeft} month${monthsLeft===1?'':'s'} left</small>`};
+$('ecgForm').onsubmit=ev=>{ev.preventDefault();const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);if(!t||bill<=0){toast('Enter the ECG bill amount');return}const latest=latestPayment(t.id);const priorEcg=latest?data.ecgBills.filter(x=>x.paymentId===latest.id).reduce((sum,x)=>sum+(Number(x.ecgDeduction)||0),0):0;const total=Math.max(0,Number(latest?.netAmount??latest?.amount??0)-priorEcg);if(!(total>0)){toast('There is no payment amount available to deduct from');return}if(bill>=total){toast('ECG bill must be less than the payment total');return}const newTotal=total-bill;const monthsLeft=Math.max(0,Math.floor(newTotal/(Number(t.rate)||1)+1e-9));const originalEnd=t.end;const originalStart=latest?.start||t.start;const newCoverage=customCoverage(originalStart,newTotal,t.rate);const ok=window.confirm(`${t.name}
+
+Total ${money(total,t.currency)}
+ECG Bill ${money(bill,t.currency)}
+New Total ${money(newTotal,t.currency)}
+Months left ${monthsLeft}
+Paid to ${fmtDate(newCoverage.end)}
+
+Record this ECG bill?`);if(!ok)return;const old=clone(data);const billRec={id:'e-'+Date.now(),tenantId:t.id,paymentId:latest?.id||null,totalAmount:total,ecgDeduction:bill,newTotal,monthsLeft,originalStart,originalEnd,date:iso(today)};data.ecgBills.push(billRec);t.end=newCoverage.end;save();render();lastReceipt=makeEcgReceipt(t,billRec);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ECG ${money(bill,t.currency)} deducted · ${monthsLeft} month${monthsLeft===1?'':'s'} left`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
+
 
 function openTenantSheet(id){const t=id?tenant(id):null;$('tenantId').value=t?.id||'';$('tenantSheetTitle').textContent=t?'Edit tenant':'Add tenant';$('tenantName').value=t?.name||'';$('tenantRate').value=t?.rate??'';$('tenantCurrency').value=t?.currency||'GHS';$('tenantPhone').value=t?.phone||'';$('tenantStart').value=t?.start||iso(today);$('tenantEnd').value=t?.end||addMonths(iso(today),12);openSheet('tenantSheet')}
 $('addTenantBtn').onclick=()=>openTenantSheet();

@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mad Juliana’s Tenants Payment" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="manifest" href="manifest.webmanifest?v=335" />
-  <link rel="stylesheet" href="style.css?v=335" />
+  <link rel="manifest" href="manifest.webmanifest?v=336" />
+  <link rel="stylesheet" href="style.css?v=336" />
   <title>Mad Juliana’s Tenants Payment</title>
 </head>
 <body>
@@ -47,8 +47,7 @@
           <button class="action-card" data-view="payments"><span class="action-icon">₵</span><span><b>Payments</b><small>Record & view payment history</small></span><i>→</i></button>
           <button class="action-card" data-view="reminders"><span class="action-icon">◷</span><span><b>Reminders</b><small>See who is ending soon</small></span><i>→</i></button>
         </div>
-
-        
+        <div class="home-version">v2.3.4</div>
       </section>
 
       <section class="view" id="peopleView">
@@ -67,6 +66,7 @@
         <div class="page-heading"><div><span class="eyebrow">KEEP AN EYE ON IT</span><h2>Reminders</h2></div><span class="coming-pill">WhatsApp later</span></div>
         <div class="reminder-note"><b>Reminder centre</b><span>WhatsApp sending is intentionally on hold for this version. The dates below are ready when you are.</span></div>
         <div id="remindersList"></div>
+        <div class="history-section"><div class="section-mini-head"><b>Payment history</b><span>Recent records</span></div><div id="reminderHistoryList"></div></div>
       </section>
 
       <section class="view" id="settingsView">
@@ -76,7 +76,7 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.2.3.29</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.3.4</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
@@ -89,7 +89,7 @@
             <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.2.3.29</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.3.4</strong></div>
           <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
@@ -124,8 +124,7 @@
     <div class="handle"></div>
     <div class="sheet-head"><div><span class="eyebrow">TENANT</span><h3 id="detailName">Tenant</h3><span class="detail-status" id="detailStatus"></span></div><button class="close" data-close>×</button></div>
     <div class="coverage-card"><div><span>PAID TO</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div></div>
-    <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="detailReceiptBtn">Receipt</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
-    <div class="sheet-section"><div class="section-mini-head"><b>Payment history</b><span id="detailHistoryCount"></span></div><div id="detailHistory"></div></div>
+    <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="ecgBillBtn">💡 ECG Bill</button><button class="secondary-btn" id="detailReceiptBtn">Receipt</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
   </section>
 
   <section class="sheet" id="paymentSheet" aria-hidden="true">
@@ -137,12 +136,23 @@
         <button type="button" data-duration="6">6 months</button><button type="button" data-duration="12">1 year</button><button type="button" data-duration="24">2 years</button><button type="button" data-duration="custom">Custom</button>
       </div>
       <div class="two-col"><label>Months<input id="paymentMonths" type="number" min="1" step="1" value="6" readonly></label><label>Amount<input id="paymentAmount" type="number" min="0.01" step="0.01" required inputmode="decimal"></label></div>
-      <label>ECG bill deduction <small>optional</small><input id="ecgDeduction" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 320"></label>
-      <div class="custom-helper" id="customHelper" hidden>Enter the amount paid and we’ll work out the months + days it covers. If there is an ECG bill, enter it above and the rent coverage will be reduced by that amount.</div>
+      <div class="custom-helper" id="customHelper" hidden>Enter the amount paid and we’ll work out the months + days it covers.</div>
       <div class="period-preview" id="periodPreview"></div>
       <label>Payment date<input id="paymentDate" type="date" required></label>
       <label>Note <small>optional</small><input id="paymentNote" maxlength="120" placeholder="e.g. Renewal payment"></label>
       <button class="primary-btn" type="submit">Save payment & generate receipt</button>
+    </form>
+  </section>
+
+
+  <section class="sheet" id="ecgSheet" aria-hidden="true">
+    <div class="handle"></div>
+    <div class="sheet-head"><div><span class="eyebrow">ECG BILL</span><h3>Deduct ECG bill</h3></div><button class="close" data-close>×</button></div>
+    <div class="ecg-meta"><div><span>Tenant</span><b id="ecgTenant"></b></div><div><span>Current paid to</span><b id="ecgCurrentPaidTo"></b></div><div><span>Monthly rate</span><b id="ecgRate"></b></div></div>
+    <form id="ecgForm">
+      <label>ECG bill amount<input id="ecgAmount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="e.g. 320"></label>
+      <div class="period-preview ecg-preview" id="ecgPreview">Enter the ECG bill amount.</div>
+      <button class="primary-btn" type="submit">Deduct ECG bill</button>
     </form>
   </section>
 
@@ -154,6 +164,6 @@
   </section>
 
   <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" hidden>Undo</button></div>
-  <script src="app.js?v=335"></script>
+  <script src="app.js?v=336"></script>
 </body>
 </html>
