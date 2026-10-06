@@ -47,7 +47,7 @@
           <button class="action-card" data-view="payments"><span class="action-icon">₵</span><span><b>Payments</b><small>Record & view payment history</small></span><i>→</i></button>
           <button class="action-card" data-view="reminders"><span class="action-icon">◷</span><span><b>Reminders</b><small>See who is ending soon</small></span><i>→</i></button>
         </div>
-        <div class="home-version">v2.3.4</div>
+        <div class="home-version">v2.3.6</div>
       </section>
 
       <section class="view" id="peopleView">
@@ -76,7 +76,7 @@
           <div><b>Landlady</b><span>Juliana Aida Antwi</span></div>
 
           <div class="sync-card">
-            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.3.4</span></span></div>
+            <div class="sync-head"><div><b>Copy Updated Prices</b><span>Create a simple update link containing the latest residents and monthly prices. Send the link anywhere; another copy of the app can paste it and apply the update.</span></div><span class="sync-version">v<span id="appVersion">2.3.6</span></span></div>
             <div class="sync-preview" id="pricePreview"></div>
             <button id="copyLinkBtn" class="settings-btn sync-primary">🔗 Copy update link</button>
             <button id="downloadPricesBtn" class="settings-btn">Save update as JSON (backup)</button>
@@ -89,7 +89,7 @@
             <textarea id="updateLink" class="price-package link-box" spellcheck="false" hidden></textarea>
           </div>
 
-          <div class="version-row"><span>App Version</span><strong>2.3.4</strong></div>
+          <div class="version-row"><span>App Version</span><strong>2.3.6</strong></div>
           <div class="storage-status" id="storageStatus"></div>
           <button id="exportBtn" class="settings-btn">Export full backup</button>
           <button id="resetBtn" class="settings-btn danger">Reset to original tenants</button>
@@ -123,7 +123,7 @@
   <section class="sheet" id="tenantDetailSheet" aria-hidden="true">
     <div class="handle"></div>
     <div class="sheet-head"><div><span class="eyebrow">TENANT</span><h3 id="detailName">Tenant</h3><span class="detail-status" id="detailStatus"></span></div><button class="close" data-close>×</button></div>
-    <div class="coverage-card"><div><span>PAID TO</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div></div>
+    <div class="coverage-card"><div><span>PAID TO</span><strong id="detailEnd"></strong></div><div><span>MONTHLY RATE</span><strong id="detailRate"></strong></div><div><span>RENT VALUE</span><strong id="detailRentAmount">—</strong></div><div><span>ECG DEDUCTED</span><strong id="detailEcgAmount">None</strong></div><div class="coverage-full"><span>CURRENT COVERAGE</span><strong id="detailCoverage">—</strong></div></div>
     <div class="detail-actions"><button class="primary-btn" id="extendBtn">+ Extend payment</button><button class="secondary-btn" id="ecgBillBtn">💡 ECG Bill</button><button class="secondary-btn" id="detailReceiptBtn">Receipt</button><button class="secondary-btn" id="editTenantBtn">Edit tenant details</button></div>
   </section>
 

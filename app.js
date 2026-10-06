@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.4';
+const APP_VERSION='2.3.6';
 const DB_NAME='mad-juliana-tenants-db';
 const DB_STORE='app';
 const DB_KEY='state';
@@ -95,7 +95,7 @@ function renderHome(){
 function renderPeople(){
   const q=($('peopleSearch')?.value||'').toLowerCase().trim();
   const list=data.tenants.filter(t=>t.name.toLowerCase().includes(q));
-  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);return `<button class="person-row" data-person="${t.id}"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid to ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span><i>›</i></button>`}).join('')||`<div class="empty">No tenants found.</div>`;
+  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const detail=ecg>0?` · rent ${money(rent,t.currency)} · ECG ${money(ecg,t.currency)} deducted`:'';return `<button class="person-row" data-person="${t.id}"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid to ${fmtDate(t.end)}${detail}</span></div><span class="status ${cls}">${label}</span><i>›</i></button>`}).join('')||`<div class="empty">No tenants found.</div>`;
   document.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
 }
 function approximateCoverage(p){
@@ -119,22 +119,22 @@ function renderPayments(){
     if(!g){g={key,title:paymentMonthHeader(p.date||iso(today)),items:[]};groups.push(g)}
     g.items.push(p);
   });
-  $('paymentsList').innerHTML=groups.map(g=>`<section class="payment-group"><h3 class="payment-month-header">${esc(g.title)}</h3><div class="payment-group-list">${g.items.map(p=>{const t=tenant(p.tenantId);if(!t)return '';const [statusLabel,statusClass]=status(t);const badge=statusClass==='active'?'':`<span class="status ${statusClass}">${statusLabel}</span>`;return `<button class="payment-row ${statusClass}" data-person="${esc(t.id)}"><div class="payment-main"><div class="payment-row-top"><strong>${esc(t.name)}</strong><strong class="payment-amount">${money(p.amount,p.currency)}</strong></div><div class="payment-row-bottom"><span>${approximateCoverage(p)}</span>${badge}</div></div><i class="payment-chevron">›</i></button>`}).join('')}</div></section>`).join('')||`<div class="empty">No payments yet.</div>`;
+  $('paymentsList').innerHTML=groups.map(g=>`<section class="payment-group"><h3 class="payment-month-header">${esc(g.title)}</h3><div class="payment-group-list">${g.items.map(p=>{const t=tenant(p.tenantId);if(!t)return '';const [statusLabel,statusClass]=status(t);const badge=statusClass==='active'?'':`<span class="status ${statusClass}">${statusLabel}</span>`;const ecg=Number(p.ecgDeduction)||0;const rent=Number(p.netAmount??p.amount)||0;const extra=ecg>0?` · ECG ${money(ecg,p.currency)} deducted`:'';return `<button class="payment-row ${statusClass}" data-person="${esc(t.id)}"><div class="payment-main"><div class="payment-row-top"><strong>${esc(t.name)}</strong><strong class="payment-amount">${money(rent,p.currency)}</strong></div><div class="payment-row-bottom"><span>${approximateCoverage(p)}${extra}</span>${badge}</div></div><i class="payment-chevron">›</i></button>`}).join('')}</div></section>`).join('')||`<div class="empty">No payments yet.</div>`;
   document.querySelectorAll('#paymentsList [data-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person));
 }
 function latestPayment(id){return [...data.payments].filter(p=>p.tenantId===id).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||null}
 function renderReminders(){
   const sorted=[...data.tenants].sort((a,b)=>a.end.localeCompare(b.end));
-  $('remindersList').innerHTML=sorted.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);return `<div class="reminder-row"><div class="avatar small">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><strong>${esc(t.name)}</strong><span>Paid to ${fmtDate(t.end)}</span></div><span class="status ${cls}">${label}</span>${p?`<button class="reminder-print" type="button" data-receipt-tenant="${esc(t.id)}" aria-label="Open and share receipt for ${esc(t.name)}">Receipt</button>`:'<span class="no-receipt">No receipt</span>'}</div>`}).join('');
+  $('remindersList').innerHTML=sorted.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const extra=ecg>0?` · Rent ${money(rent,p.currency)} · ECG ${money(ecg,p.currency)} deducted`:'';return `<div class="reminder-row"><div class="avatar small">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><strong>${esc(t.name)}</strong><span>Paid to ${fmtDate(t.end)}${extra}</span></div><span class="status ${cls}">${label}</span>${p?`<button class="reminder-print" type="button" data-receipt-tenant="${esc(t.id)}" aria-label="Open and share receipt for ${esc(t.name)}">Receipt</button>`:'<span class="no-receipt">No receipt</span>'}</div>`}).join('');
   document.querySelectorAll('[data-receipt-tenant]').forEach(b=>b.onclick=()=>openReceiptForTenant(b.dataset.receiptTenant,true));
   const history=[...data.payments].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const el=$('reminderHistoryList');
-  if(el) el.innerHTML=history.map(p=>{const t=tenant(p.tenantId);if(!t)return '';return `<button class="history-row history-row-button" data-history-person="${esc(t.id)}"><div><b>${esc(t.name)}</b><span>${fmtDate(p.date)} · ${approximateCoverage(p)}${p.note?` · ${esc(p.note)}`:''}</span></div><strong>${money(p.amount,p.currency)}</strong></button>`}).join('')||'<div class="empty">No payment records.</div>';
+  if(el) el.innerHTML=history.map(p=>{const t=tenant(p.tenantId);if(!t)return '';const ecg=Number(p.ecgDeduction)||0;const rent=Number(p.netAmount??p.amount)||0;const detail=ecg>0?`${approximateCoverage(p)} · Rent ${money(rent,p.currency)} · ECG ${money(ecg,p.currency)} deducted`:approximateCoverage(p);return `<button class="history-row history-row-button" data-history-person="${esc(t.id)}"><div><b>${esc(t.name)}</b><span>${fmtDate(p.date)} · ${detail}${p.note?` · ${esc(p.note)}`:''}</span></div><strong>${money(rent,p.currency)}</strong></button>`}).join('')||'<div class="empty">No payment records.</div>';
   document.querySelectorAll('[data-history-person]').forEach(b=>b.onclick=()=>openDetail(b.dataset.historyPerson));
 }
 $('peopleSearch').oninput=renderPeople;
 
-function openDetail(id){selectedTenant=id;const t=tenant(id);$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
+function openDetail(id){selectedTenant=id;const t=tenant(id);const p=latestPayment(id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;$('detailName').textContent=t.name;$('detailEnd').textContent=fmtDate(t.end);$('detailRate').textContent=money(t.rate,t.currency)+'/month';$('detailRentAmount').textContent=p?money(rent,t.currency):'—';$('detailEcgAmount').textContent=ecg>0?money(ecg,t.currency):'None';$('detailCoverage').textContent=p?approximateCoverage(p):'No payment yet';const [label,cls]=status(t);$('detailStatus').textContent=label;$('detailStatus').className='detail-status '+cls;openSheet('tenantDetailSheet')}
 $('extendBtn').onclick=()=>{closeSheets();openPaymentSheet(selectedTenant)};
 $('ecgBillBtn').onclick=()=>{closeSheets();openEcgSheet(selectedTenant)};
 $('detailReceiptBtn').onclick=()=>openReceiptForTenant(selectedTenant,true);
@@ -161,21 +161,20 @@ function makeReceipt(t,p){
   const calc=formatCalculationNote(p.note);let y=135;if(calc){c.font='700 25px Georgia';c.fillText(calc,500,y);y+=58}
   const periodText=`${monthYear(p.start)} TO ${monthYear(p.end)}`;
   const rows=[['LAND LADY','JULIANA AIDA ANTWI'],['TENANT',receiptTenantName.toUpperCase()],['PERIOD',periodText],['MONTHLY RATE',money(t.rate,t.currency)],['START PERIOD',monthYear(p.start)],['END PERIOD',monthYear(p.end)]];
-  if(p.type==='ecg'){
-    rows.push(['TOTAL',money(p.totalAmount,p.currency)]);
+  if(hasEcg){
+    rows.push(['TOTAL',money(p.amount,p.currency)]);
     rows.push(['ECG BILL',money(p.ecgDeduction,p.currency)]);
-    rows.push(['NEW TOTAL',money(p.newTotal,p.currency)]);
-    rows.push(['MONTHS LEFT',`${Number(p.monthsLeft)||0} month${Number(p.monthsLeft)===1?'':'s'}`]);
+    rows.push(['NEW TOTAL',money(p.netAmount??p.amount,p.currency)]);
+    rows.push(['MONTHS LEFT',coverageLabel(Number(p.months)||0,Number(p.days)||0)]);
   }else{
     rows.push(['AMOUNT',money(p.netAmount??p.amount,p.currency)]);
-    if(hasEcg){rows.push(['ECG DEDUCTED',money(p.ecgDeduction,p.currency)]);rows.push(['MONTHS LEFT',`${Number(p.months)||0} month${Number(p.months)===1?'':'s'}`])}
   }
   c.textAlign='left';rows.forEach(([a,b])=>{c.font='700 25px Georgia';c.fillText(a,100,y);c.textAlign='center';c.font='400 25px Georgia';c.fillText(b,650,y);c.textAlign='left';y+=58});
   y+=28;c.font='700 23px Georgia';c.fillText('Landlady:',100,y);c.fillText('Tenant:',600,y);y+=34;c.font='400 23px Georgia';c.fillText('Juliana Aida Antwi',100,y);c.fillText(receiptTenantName,600,y);y+=34;c.fillText('Signed',100,y);c.fillText('Signed',600,y);
   c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`${p.type==='ecg'?'ECG bill date':'Payment date'}: ${fmtDate(p.date)}`,100,hasEcg?1120:1060);
   return canvas.toDataURL('image/png');
 }
-function makeEcgReceipt(t,e){return makeReceipt(t,{...e,type:'ecg',start:e.originalStart||t.start,end:e.originalEnd||t.end,monthsLeft:e.monthsLeft})}
+function makeEcgReceipt(t,e){const p=latestPayment(t.id);return p?makeReceipt(t,p):makeReceipt(t,{...e,type:'ecg',start:e.originalStart||t.start,end:e.newEnd||t.end,months:e.monthsLeft,days:e.daysLeft,amount:e.totalAmount,netAmount:e.newTotal,ecgDeduction:e.ecgDeduction})}
 function monthYear(s){return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
 function dataUrlToBlob(dataUrl){const [head,body]=String(dataUrl).split(',');const mime=(head.match(/data:([^;]+)/)||[])[1]||'image/png';const bin=atob(body);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new Blob([bytes],{type:mime})}
 async function shareReceiptImage(){
@@ -188,7 +187,7 @@ async function shareReceiptImage(){
     return true;
   }catch(e){if(e?.name==='AbortError')return false;toast('Could not open sharing. Tap Save image instead.');return false}
 }
-async function openReceiptForTenant(id,autoShare=false){const t=tenant(id),p=latestPayment(id);if(!t||!p){toast('No receipt available for this tenant yet');return}lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');if(autoShare)await shareReceiptImage()}
+async function openReceiptForTenant(id,autoShare=false){const t=tenant(id),p=latestPayment(id);if(!t||!p){toast('No receipt available for this tenant yet');return}const ecg=Number(p.ecgDeduction)||0;if(ecg>0&&!Number(p.netAmount)){const net=Math.max(0,Number(p.amount)-ecg);const cov=customCoverage(p.start,net,t.rate);p.netAmount=net;p.months=cov.months;p.days=cov.days;p.end=cov.end;t.end=cov.end;save();render()}lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');if(autoShare)await shareReceiptImage()}
 $('shareReceiptBtn').onclick=()=>shareReceiptImage();
 function downloadReceipt(){if(!lastReceipt)return;const a=document.createElement('a');a.href=lastReceipt;a.download='tenancy-agreement.png';document.body.appendChild(a);a.click();a.remove();}
 $('downloadReceiptBtn').onclick=downloadReceipt;
@@ -201,18 +200,36 @@ Paid to ${fmtDate(calc.end)}
 
 Record this payment?`);if(!ok)return;const old=clone(data);const p={id:'p-'+Date.now(),tenantId:t.id,amount,currency:t.currency,netAmount:amount,months:calc.months,days:calc.days,start,end:calc.end,date:$('paymentDate').value||iso(today),note:$('paymentNote').value.trim()};data.payments.push(p);t.end=calc.end;save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ${money(amount,t.currency)} recorded · ${label}`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
 
-function openEcgSheet(id){selectedTenant=id||selectedTenant;const t=tenant(selectedTenant);if(!t)return;$('ecgTenant').textContent=t.name;$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgRate').textContent=money(t.rate,t.currency)+'/month';$('ecgAmount').value='';$('ecgPreview').textContent='Enter the ECG bill amount.';openSheet('ecgSheet')}
-$('ecgAmount').oninput=()=>{const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);if(!t||bill<=0){$('ecgPreview').textContent='Enter the ECG bill amount.';return}const latest=latestPayment(t.id);const priorEcg=latest?data.ecgBills.filter(x=>x.paymentId===latest.id).reduce((sum,x)=>sum+(Number(x.ecgDeduction)||0),0):0;const total=Math.max(0,Number(latest?.netAmount??latest?.amount??0)-priorEcg);const newTotal=Math.max(0,total-bill);const monthsLeft=Math.max(0,Math.floor(newTotal/(Number(t.rate)||1)+1e-9));const originalStart=latest?.start||t.start;const originalEnd=latest?.end||t.end;$('ecgPreview').innerHTML=`<span>TOTAL</span><b>${money(total,t.currency)}</b><small>ECG bill · ${money(bill,t.currency)} · New total ${money(newTotal,t.currency)} · ${monthsLeft} month${monthsLeft===1?'':'s'} left</small>`};
-$('ecgForm').onsubmit=ev=>{ev.preventDefault();const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);if(!t||bill<=0){toast('Enter the ECG bill amount');return}const latest=latestPayment(t.id);const priorEcg=latest?data.ecgBills.filter(x=>x.paymentId===latest.id).reduce((sum,x)=>sum+(Number(x.ecgDeduction)||0),0):0;const total=Math.max(0,Number(latest?.netAmount??latest?.amount??0)-priorEcg);if(!(total>0)){toast('There is no payment amount available to deduct from');return}if(bill>=total){toast('ECG bill must be less than the payment total');return}const newTotal=total-bill;const monthsLeft=Math.max(0,Math.floor(newTotal/(Number(t.rate)||1)+1e-9));const originalEnd=t.end;const originalStart=latest?.start||t.start;const newCoverage=customCoverage(originalStart,newTotal,t.rate);const ok=window.confirm(`${t.name}
+function ecgStateForTenant(t,bill){
+  const p=latestPayment(t.id);
+  if(!p)return null;
+  const gross=Number(p.amount)||0;
+  const already=Number(p.ecgDeduction)||0;
+  const available=Math.max(0,gross-already);
+  const deduction=Math.max(0,Number(bill)||0);
+  const newTotal=Math.max(0,available-deduction);
+  const start=p.start||t.start;
+  const coverage=customCoverage(start,newTotal,t.rate);
+  return {p,gross,already,available,deduction,newTotal,start,coverage};
+}
+function renderEcgPreview(){
+  const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);const state=t?ecgStateForTenant(t,bill):null;
+  if(!state||bill<=0){$('ecgPreview').innerHTML='<span>NEW TOTAL</span><b>Enter the ECG bill amount</b><small>Type a bill amount to see the rent value and remaining coverage update live.</small>';return}
+  const {available,newTotal,coverage}=state;
+  const label=coverageLabel(coverage.months,coverage.days);
+  $('ecgPreview').innerHTML=`<div class="ecg-live-grid"><div><span>TOTAL</span><b>${money(available,t.currency)}</b></div><div><span>ECG BILL</span><b>${money(bill,t.currency)}</b></div><div><span>NEW TOTAL</span><b>${money(newTotal,t.currency)}</b></div><div><span>MONTHS LEFT</span><b>${esc(label)}</b></div></div><small>Paid to after deduction · ${fmtDate(coverage.end)}</small>`;
+}
+function openEcgSheet(id){selectedTenant=id||selectedTenant;const t=tenant(selectedTenant);if(!t)return;const p=latestPayment(t.id);$('ecgTenant').textContent=t.name;$('ecgCurrentPaidTo').textContent=fmtDate(t.end);$('ecgRate').textContent=money(t.rate,t.currency)+'/month';$('ecgAmount').value='';$('ecgPreview').innerHTML=p?'<span>NEW TOTAL</span><b>Enter the ECG bill amount</b><small>Type a bill amount to see the rent value and remaining coverage update live.</small>':'<span>NO PAYMENT</span><b>There is no payment to deduct from yet.</b><small>Record a payment for this tenant first.</small>';openSheet('ecgSheet')}
+$('ecgAmount').oninput=renderEcgPreview;
+$('ecgForm').onsubmit=ev=>{ev.preventDefault();const t=tenant(selectedTenant);const bill=Number($('ecgAmount').value||0);const state=t?ecgStateForTenant(t,bill):null;if(!t||!state||bill<=0){toast('Enter an ECG bill amount');return}if(!(state.available>0)){toast('There is no remaining rent value available to deduct from');return}if(bill>state.available){toast(`ECG bill cannot exceed ${money(state.available,t.currency)}`);return}const {p,gross,newTotal,start,coverage}=state;const old=clone(data);const originalEnd=p.end;const totalEcg=Number(p.ecgDeduction||0)+bill;p.ecgDeduction=totalEcg;p.netAmount=newTotal;p.months=coverage.months;p.days=coverage.days;p.end=coverage.end;p.ecgUpdatedAt=new Date().toISOString();t.end=coverage.end;const billRec={id:'e-'+Date.now(),tenantId:t.id,paymentId:p.id,totalAmount:state.available,ecgDeduction:bill,newTotal,monthsLeft:coverage.months,daysLeft:coverage.days,originalStart:start,originalEnd,newEnd:coverage.end,date:iso(today)};data.ecgBills.push(billRec);const label=coverageLabel(coverage.months,coverage.days);const ok=window.confirm(`${t.name}
 
-Total ${money(total,t.currency)}
+Total ${money(state.available,t.currency)}
 ECG Bill ${money(bill,t.currency)}
 New Total ${money(newTotal,t.currency)}
-Months left ${monthsLeft}
-Paid to ${fmtDate(newCoverage.end)}
+Months left ${label}
+Paid to ${fmtDate(coverage.end)}
 
-Record this ECG bill?`);if(!ok)return;const old=clone(data);const billRec={id:'e-'+Date.now(),tenantId:t.id,paymentId:latest?.id||null,totalAmount:total,ecgDeduction:bill,newTotal,monthsLeft,originalStart,originalEnd,date:iso(today)};data.ecgBills.push(billRec);t.end=newCoverage.end;save();render();lastReceipt=makeEcgReceipt(t,billRec);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ECG ${money(bill,t.currency)} deducted · ${monthsLeft} month${monthsLeft===1?'':'s'} left`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
-
+Record this ECG bill?`);if(!ok){data=old;return}save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ECG ${money(bill,t.currency)} deducted · ${label} left`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
 
 function openTenantSheet(id){const t=id?tenant(id):null;$('tenantId').value=t?.id||'';$('tenantSheetTitle').textContent=t?'Edit tenant':'Add tenant';$('tenantName').value=t?.name||'';$('tenantRate').value=t?.rate??'';$('tenantCurrency').value=t?.currency||'GHS';$('tenantPhone').value=t?.phone||'';$('tenantStart').value=t?.start||iso(today);$('tenantEnd').value=t?.end||addMonths(iso(today),12);openSheet('tenantSheet')}
 $('addTenantBtn').onclick=()=>openTenantSheet();
