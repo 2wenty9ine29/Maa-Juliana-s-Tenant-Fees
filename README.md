@@ -28,3 +28,7 @@ Copy Updated Prices copies a compact update link to the clipboard. On another de
 
 ## Durable local storage (v2.1.6)
 The app keeps tenant and payment records in browser localStorage and a second IndexedDB copy. On startup it restores the newest local copy, and it requests persistent browser storage where supported. This protects records against normal refreshes, closing the app, and long periods of inactivity better than localStorage alone. Data is still device/browser-local; use the full backup or update-link tools to move data to another device/browser.
+
+
+### ECG bill deduction (v2.2.3.29)
+When recording a payment, an optional ECG bill deduction can be entered. The app subtracts the ECG amount from the rent value before calculating coverage, so a GHS 960 payment at GHS 160/month with a GHS 320 ECG deduction covers 4 months. ECG deduction details appear on the tenancy-agreement receipt only when a deduction was entered.

@@ -57,3 +57,7 @@ h1{font-size:53px!important;line-height:.98!important}
 /* v2.2.2 detail/confirmation polish */
 .detail-actions{grid-template-columns:1fr 1fr;}.detail-actions .primary-btn{grid-column:1/-1}.detail-actions .secondary-btn{margin-top:0}
 @media(max-width:380px){.detail-actions{grid-template-columns:1fr}.detail-actions .primary-btn{grid-column:auto}}
+
+/* v2.2.3.29 ECG deduction */
+#ecgDeduction{font-variant-numeric:tabular-nums}
+.period-preview small + small{display:block;margin-top:4px}
