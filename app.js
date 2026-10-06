@@ -1,4 +1,4 @@
-const APP_VERSION='2.2.2';
+const APP_VERSION='2.2.3';
 const DB_NAME='mad-juliana-tenants-db';
 const DB_STORE='app';
 const DB_KEY='state';
@@ -149,13 +149,14 @@ function formatCalculationNote(note){
 }
 function makeReceipt(t,p){
   const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1120;const c=canvas.getContext('2d');
-  c.fillStyle='#fff';c.fillRect(0,0,1000,1120);c.fillStyle='#111';c.textAlign='center';c.font='700 42px Arial';c.fillText('TENANCY AGREEMENT',500,72);c.fillRect(385,86,230,3);
-  const calc=formatCalculationNote(p.note);let y=135;if(calc){c.font='700 25px Arial';c.fillText(calc,500,y);y+=58}
-  const duration=receiptCoverageLabel(p);const periodText=`${monthYear(p.start)} TO ${monthYear(p.end)}`;
-  const rows=[['LAND LADY','JULIANA AIDA ANTWI'],['TENANT',String(t.name).toUpperCase()],['PERIOD',periodText],['MONTHLY RATE',money(t.rate,t.currency)],['START PERIOD',monthYear(p.start)],['END PERIOD',monthYear(p.end)],['AMOUNT',money(p.amount,p.currency)]];
-  c.textAlign='left';rows.forEach(([a,b])=>{c.font='700 25px Arial';c.fillText(a,100,y);c.textAlign='center';c.font='400 25px Arial';c.fillText(b,650,y);c.textAlign='left';y+=58});
-  y+=28;c.font='700 23px Arial';c.fillText('Landlady:',100,y);c.fillText('Tenant:',600,y);y+=34;c.font='400 23px Arial';c.fillText('Juliana Aida Antwi',100,y);c.fillText(t.name,600,y);y+=34;c.fillText('Signed',100,y);c.fillText('Signed',600,y);
-  c.fillStyle='#777';c.font='400 17px Arial';c.fillText(`Payment date: ${fmtDate(p.date)}`,100,1060);
+  const receiptTenantName=String(t.name||'').replace(/\s*\([^)]*\)/g,'').trim();
+  c.fillStyle='#fff';c.fillRect(0,0,1000,1120);c.fillStyle='#111';c.textAlign='center';c.font='700 42px Georgia';c.fillText('TENANCY AGREEMENT',500,72);c.fillRect(385,86,230,3);
+  const calc=formatCalculationNote(p.note);let y=135;if(calc){c.font='700 25px Georgia';c.fillText(calc,500,y);y+=58}
+  const periodText=`${monthYear(p.start)} TO ${monthYear(p.end)}`;
+  const rows=[['LAND LADY','JULIANA AIDA ANTWI'],['TENANT',receiptTenantName.toUpperCase()],['PERIOD',periodText],['MONTHLY RATE',money(t.rate,t.currency)],['START PERIOD',monthYear(p.start)],['END PERIOD',monthYear(p.end)],['AMOUNT',money(p.amount,p.currency)]];
+  c.textAlign='left';rows.forEach(([a,b])=>{c.font='700 25px Georgia';c.fillText(a,100,y);c.textAlign='center';c.font='400 25px Georgia';c.fillText(b,650,y);c.textAlign='left';y+=58});
+  y+=28;c.font='700 23px Georgia';c.fillText('Landlady:',100,y);c.fillText('Tenant:',600,y);y+=34;c.font='400 23px Georgia';c.fillText('Juliana Aida Antwi',100,y);c.fillText(receiptTenantName,600,y);y+=34;c.fillText('Signed',100,y);c.fillText('Signed',600,y);
+  c.fillStyle='#777';c.font='400 17px Georgia';c.fillText(`Payment date: ${fmtDate(p.date)}`,100,1060);
   return canvas.toDataURL('image/png');
 }
 function monthYear(s){return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
