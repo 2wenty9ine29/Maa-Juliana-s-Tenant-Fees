@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.5.33';
+const APP_VERSION='2.3.5.35';
 const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
 let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
@@ -49,7 +49,7 @@ const original={
     {id:'eudia',name:'Eudia Agyei (Nurse)',currency:'GHS',rate:160,phone:'',start:'2026-03-01',end:'2027-03-01'},
     {id:'emmanuella-afriyie',name:'Emmanuella Afriyie',currency:'GHS',rate:250,phone:'',start:'2026-04-01',end:'2027-04-01'},
     {id:'stephen',name:'Stephen Awonu (Borga)',currency:'GHS',rate:160,phone:'',start:'2026-01-01',end:'2027-01-08'},
-    {id:'emmanuella-osei',name:'Emmanuella Osei',currency:'GHS',rate:170,phone:'',start:'2026-06-01',end:'2027-06-01'}
+    {id:'emmanuella-osei',name:'Emmanuel Osei',currency:'GHS',rate:170,phone:'',start:'2026-06-01',end:'2027-06-01'}
   ],
   payments:[
     {id:'p-eudia',tenantId:'eudia',amount:1920,currency:'GHS',months:12,start:'2026-03-01',end:'2027-03-01',date:'2026-03-01',note:'Original tenancy payment'},
@@ -121,7 +121,7 @@ async function readStateDB(){const db=await openStateDB();return new Promise((re
 async function writeStateDB(snapshot){const db=await openStateDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(snapshot,DB_KEY);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error||new Error('Could not save local database'))}})}
 async function requestPersistentStorage(){try{if(navigator.storage?.persist){const already=await navigator.storage.persisted();if(!already)await navigator.storage.persist();}}catch{} }
 function save(){const snapshot={...clone(data),updatedAt:new Date().toISOString()};const stamp=snapshot.updatedAt;(snapshot.tenants||[]).forEach(t=>t.updatedAt=stamp);(snapshot.payments||[]).forEach(p=>p.updatedAt=stamp);(snapshot.ecgBills||[]).forEach(e=>e.updatedAt=stamp);data=snapshot;storageLastSaved=snapshot.updatedAt;try{localStorage.setItem(KEY,JSON.stringify(snapshot))}catch{};writeStateDB(snapshot).then(()=>{storageReady=true;renderStorageStatus()}).catch(()=>renderStorageStatus());requestPersistentStorage();renderStorageStatus();queueCloudSync()}
-async function hydratePersistentState(){try{const stored=await readStateDB();if(stored?.tenants?.length){const localTime=Date.parse(data.updatedAt||'');const dbTime=Date.parse(stored.updatedAt||'');if(dbTime>localTime){data=stored;try{localStorage.setItem(KEY,JSON.stringify(data))}catch{};storageLastSaved=stored.updatedAt;render()}}storageReady=true;renderStorageStatus()}catch{storageReady=false;renderStorageStatus()}requestPersistentStorage();const migrated=runMigrations();if(!data.updatedAt||migrated)save();render()}
+async function hydratePersistentState(){try{const stored=await readStateDB();if(stored?.tenants?.length){const localTime=Date.parse(data.updatedAt||'');const dbTime=Date.parse(stored.updatedAt||'');if(dbTime>localTime){data=stored;try{localStorage.setItem(KEY,JSON.stringify(data))}catch{};storageLastSaved=stored.updatedAt;render()}}storageReady=true;renderStorageStatus()}catch{storageReady=false;renderStorageStatus()}requestPersistentStorage();const migrated=runMigrations();const ecgApplied=applyThreeMonthEcgMigration();if(!data.updatedAt||migrated||ecgApplied)save();render()}
 function tenant(id){return data.tenants.find(t=>t.id===id)}
 function pricePackage(){return {app:'mad-juliana-tenants',type:'tenant-price-update',version:APP_VERSION,exportedAt:new Date().toISOString(),tenants:data.tenants.map(t=>({id:t.id,name:t.name,currency:t.currency,rate:t.rate,phone:t.phone||'',start:t.start,end:t.end}))}}
 function packageText(){return JSON.stringify(pricePackage(),null,2)}
@@ -342,6 +342,50 @@ Covers ${label}
 Paid to ${fmtDate(calc.end)}
 
 Record this payment?`);if(!ok)return;const old=clone(data);const p={id:'p-'+Date.now(),tenantId:t.id,amount,currency:t.currency,monthlyRate:Number(t.rate)||0,netAmount:amount,months:calc.months,days:calc.days,start,end:calc.end,date:$('paymentDate').value||iso(today),note:$('paymentNote').value.trim()};data.payments.push(p);t.end=calc.end;save();render();lastReceipt=makeReceipt(t,p);$('receiptImage').src=lastReceipt;closeSheets();openSheet('receiptSheet');toastAction(`${t.name}: ${money(amount,t.currency)} recorded · ${label}`,'Undo',()=>{data=old;save();render();lastReceipt=null},5000)};
+
+function applyThreeMonthEcgMigration(){
+  const migrationId='ecg-aug-sep-current-2026-v2';
+  const previousMigrationId='ecg-aug-sep-current-2026-v1';
+  if(!Array.isArray(data.appliedMigrations))data.appliedMigrations=[];
+  if(data.appliedMigrations.includes(migrationId))return false;
+  const markerNote='ECG deduction: August, September & current bill (3 months)';
+  const ecgNote='Three-month ECG allocation including the additional GHS 88.09 share.';
+  const plan=[
+    {tenantId:'stephen',amount:591.69,label:'Stephen Awonu (Borga)'},
+    {tenantId:'eudia',amount:423.82,label:'Eudia Agyei (Nurse)'},
+    {tenantId:'emmanuella-osei',amount:423.82,label:'Emmanuel Osei (Collins)'}
+  ];
+  const ready=plan.map(item=>{
+    const t=tenant(item.tenantId);const p=t?latestPayment(t.id):null;
+    const prior=data.ecgBills.find(e=>e.tenantId===item.tenantId&&(e.migrationId===previousMigrationId||String(e.note||'').includes('Three-month ECG allocation. Includes GH₵88.09 credit from Nana')));
+    const already=data.ecgBills.some(e=>e.tenantId===item.tenantId&&e.migrationId===migrationId);
+    const available=prior?Number(prior.totalAmount)||0:(p?Math.max(0,round2((Number(p.amount)||0)-(Number(p.ecgDeduction)||0))):0);
+    return {...item,t,p,prior,already,available};
+  });
+  if(ready.some(x=>!x.t||!x.p||(!x.already&&x.available+0.0001<x.amount)))return false;
+  const stamp='2026-11-17';
+  ready.forEach(x=>{
+    if(x.already)return;
+    const {t,p,amount,prior}=x;
+    const before=prior?Number(prior.totalAmount)||0:x.available;
+    const oldAmount=prior?Number(prior.ecgDeduction)||0:0;
+    const newTotal=round2(before-amount);
+    const start=p.start||t.start;const coverage=customCoverage(start,newTotal,rateOf(p,t));
+    if(prior){
+      // Correct the earlier one-time migration in place: apply only the difference, never a second full deduction.
+      p.ecgDeduction=round2((Number(p.ecgDeduction)||0)+(amount-oldAmount));
+      Object.assign(prior,{totalAmount:before,ecgDeduction:amount,billAmount:amount,billCurrency:'GHS',newTotal,monthsLeft:coverage.months,daysLeft:coverage.days,originalStart:start,originalEnd:p.end,newEnd:coverage.end,date:stamp,note:ecgNote,migrationId});
+    }else{
+      p.ecgDeduction=round2((Number(p.ecgDeduction)||0)+amount);
+      data.ecgBills.push({id:'e-'+migrationId+'-'+t.id,tenantId:t.id,paymentId:p.id,totalAmount:before,ecgDeduction:amount,billAmount:amount,billCurrency:'GHS',newTotal,monthsLeft:coverage.months,daysLeft:coverage.days,originalStart:start,originalEnd:p.end,newEnd:coverage.end,date:stamp,note:ecgNote,migrationId});
+    }
+    p.netAmount=newTotal;p.months=coverage.months;p.days=coverage.days;p.end=coverage.end;p.ecgUpdatedAt=new Date().toISOString();
+    p.note=[p.note,markerNote].filter(Boolean).join(' · ');t.end=coverage.end;
+  });
+  if(!data.appliedMigrations.includes(previousMigrationId))data.appliedMigrations.push(previousMigrationId);
+  data.appliedMigrations.push(migrationId);
+  return true;
+}
 
 function ecgStateForTenant(t,bill){
   const p=latestPayment(t.id);
