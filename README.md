@@ -81,3 +81,9 @@ When recording a payment, an optional ECG bill deduction can be entered. The app
 - Corrects the final allocations to Borga GHS 591.69, Eudia GHS 423.82, and Emmanuel Osei (Collins) GHS 423.82 by adding GHS 88.09 to each original share.
 - If version 2.3.5.34 already applied the earlier amounts, this update adjusts only the difference and updates the existing ECG history entry instead of deducting the full amount twice.
 - Keeps Emmanuella Afriyie outside the migration.
+
+
+## v2.3.6 — People screen visual refinement
+- Tenant rent and ECG figures are arranged in a labelled two-column financial section.
+- Tenant cards receive a restrained soft shadow and warm surface treatment.
+- No changes to tenant records, calculations, navigation, heading, search, status badges or card spacing.

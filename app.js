@@ -1,4 +1,4 @@
-const APP_VERSION='2.3.5.35';
+const APP_VERSION='2.3.6';
 const SUPABASE_URL='https://nhekfxjmiaoiepesxexr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vOBCGhul6_CjvCur1VrjoQ_WQFeLWK5';
 let supabaseClient=null, cloudUser=null, cloudSyncTimer=null, cloudSyncBusy=false, applyingCloud=false, cloudChannel=null;
@@ -155,7 +155,7 @@ function renderHome(){
 function renderPeople(){
   const q=($('peopleSearch')?.value||'').toLowerCase().trim();
   const list=data.tenants.filter(t=>t.name.toLowerCase().includes(q));
-  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const detail=ecg>0?` · rent ${money(rent,t.currency)} · ECG ${money(ecg,t.currency)} deducted`:'';return `<div class="person-swipe" data-swipe-tenant="${esc(t.id)}"><button class="person-row" data-person="${esc(t.id)}" type="button"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span>${money(t.rate,t.currency)}/month · paid to ${fmtDate(t.end)}${detail}</span></div><span class="status ${cls}">${label}</span><i>›</i></button><button class="swipe-delete" type="button" data-delete-tenant="${esc(t.id)}" aria-label="Delete ${esc(t.name)}">Delete</button></div>`}).join('')||`<div class="empty">No tenants found.</div>`;
+  $('peopleList').innerHTML=list.map(t=>{const [label,cls]=status(t);const p=latestPayment(t.id);const ecg=Number(p?.ecgDeduction)||0;const rent=Number(p?.netAmount??p?.amount)||0;const financials=ecg>0?`<div class="person-financials"><div><small>Rent amount</small><b>${money(rent,t.currency)}</b></div><div><small>ECG deducted</small><b>${money(ecg,t.currency)}</b></div></div>`:'';return `<div class="person-swipe" data-swipe-tenant="${esc(t.id)}"><button class="person-row" data-person="${esc(t.id)}" type="button"><div class="avatar">${t.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div class="person-main"><strong>${esc(t.name)}</strong><span class="person-rent">${money(t.rate,t.currency)} / month</span><span class="person-paid">Paid to ${fmtDate(t.end)}</span>${financials}</div><span class="status ${cls}">${label}</span><i>›</i></button><button class="swipe-delete" type="button" data-delete-tenant="${esc(t.id)}" aria-label="Delete ${esc(t.name)}">Delete</button></div>`}).join('')||`<div class="empty">No tenants found.</div>`;
   document.querySelectorAll('#peopleList .person-swipe').forEach(w=>{
     const row=w.querySelector('[data-person]'); let startX=0,startY=0,dragging=false,moved=false;
     w.addEventListener('pointerdown',e=>{if(e.target.closest('.swipe-delete'))return;startX=e.clientX;startY=e.clientY;dragging=true;moved=false;w.setPointerCapture?.(e.pointerId)});
